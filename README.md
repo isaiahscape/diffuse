@@ -1,4 +1,4 @@
-# Diffuse Music Live Wallpaper (Play Store Kotlin Reconstruction)
+# Diffuse Live Wallpaper
 
 Editable Kotlin Android Gradle project reconstructed from the Play Store release `com.depthware.lwp.diffuse.v2` (`1.1.0.0 (3433)-PUB`, `versionCode = 3433`).
 
