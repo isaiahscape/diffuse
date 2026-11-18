@@ -5,9 +5,23 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Optional release tag (defaults to build-<commit-hash>)'
+        required: false
+        default: ''
+      prerelease:
+        description: 'Mark manual build as prerelease'
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   release:
@@ -17,6 +31,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -27,6 +43,28 @@ jobs:
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          SHA7="$(git rev-parse --short=7 HEAD)"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${{ github.ref_name }}"
+            PRERELEASE="false"
+          else
+            CUSTOM_TAG="${{ inputs.tag }}"
+            TAG="${CUSTOM_TAG:-build-${SHA7}}"
+            VERSION="${SHA7}"
+            if [ "${{ inputs.prerelease }}" = "true" ]; then
+              PRERELEASE="true"
+            else
+              PRERELEASE="false"
+            fi
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Accept licenses & install Android 35 components
         run: |
@@ -65,17 +103,33 @@ jobs:
       - name: Stage release APK
         run: |
           mkdir -p release-artifacts
+          FOUND=0
           for apk in app/build/outputs/apk/release/*.apk; do
             if [ -f "$apk" ]; then
-              cp "$apk" "release-artifacts/Diffuse-${{ github.ref_name }}.apk"
+              cp "$apk" "release-artifacts/Diffuse-${{ steps.meta.outputs.version }}.apk"
+              FOUND=1
               break
             fi
           done
+          if [ "$FOUND" -ne 1 ]; then
+            echo "::error::No release APK found under app/build/outputs/apk/release/"
+            exit 1
+          fi
+
+      - name: Upload Release APK artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: diffuse-apk-${{ steps.meta.outputs.version }}
+          path: release-artifacts/*.apk
+          if-no-files-found: error
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Diffuse ${{ github.ref_name }}"
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: "Diffuse ${{ steps.meta.outputs.version }}"
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
           generate_release_notes: true
           files: release-artifacts/*.apk
           token: ${{ secrets.GITHUB_TOKEN }}
