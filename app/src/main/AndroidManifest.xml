@@ -17,6 +17,7 @@
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
+        <package android:name="com.cidercollective.cider" />
     </queries>
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
