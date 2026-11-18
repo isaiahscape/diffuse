@@ -1,6 +1,32 @@
-# Diffuse Live Wallpaper
+<p align="center">
+  <img src="docs/banner.png" alt="Diffuse Live Wallpaper" width="100%" />
+</p>
 
-Editable Kotlin Android Gradle project reconstructed from the Play Store release `com.depthware.lwp.diffuse.v2` (`1.1.0.0 (3433)-PUB`, `versionCode = 3433`).
+<h1 align="center">Diffuse Live Wallpaper</h1>
+
+<p align="center">
+  <a href="https://github.com/isaiahscape/diffuse/actions/workflows/build.yml">
+    <img src="https://github.com/isaiahscape/diffuse/actions/workflows/build.yml/badge.svg" alt="Android CI Build" />
+  </a>
+  <a href="https://github.com/isaiahscape/diffuse/actions/workflows/release.yml">
+    <img src="https://github.com/isaiahscape/diffuse/actions/workflows/release.yml/badge.svg" alt="Release APK" />
+  </a>
+  <a href="https://github.com/isaiahscape/diffuse/releases">
+    <img src="https://img.shields.io/github/v/release/isaiahscape/diffuse?include_prereleases&label=version&color=609BFF" alt="Version" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/isaiahscape/diffuse?color=34D399" alt="License" />
+  </a>
+  <a href="https://ko-fi.com/isaiahscape">
+    <img src="https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white" alt="Support on Ko-fi" />
+  </a>
+</p>
+
+<p align="center">
+  Editable Kotlin Android Gradle project reconstructed from the Play Store release <code>com.depthware.lwp.diffuse.v2</code> (<code>1.1.0.0 (3433)-PUB</code>, <code>versionCode = 3433</code>).
+</p>
+
+---
 
 ## Project Structure
 
