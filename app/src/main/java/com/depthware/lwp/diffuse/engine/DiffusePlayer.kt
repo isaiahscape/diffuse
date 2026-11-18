@@ -87,8 +87,8 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         if (density < 1.0f) {
             density = 2.5f
         }
-        val scaledWidth = (width / density).toInt()
-        val scaledHeight = (height / density).toInt()
+        val scaledWidth = maxOf(1, (width / density).toInt())
+        val scaledHeight = maxOf(1, (height / density).toInt())
         val existing = screenFbo
         if (existing == null || existing.height != scaledHeight || existing.width != scaledWidth || forceRecreate) {
             existing?.dispose()
@@ -220,7 +220,9 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         fboB.dispose()
         fboC.dispose()
         screenFbo?.dispose()
+        screenFbo = null
         randTexture?.dispose()
+        randTexture = null
     }
 
     override fun resume() {
@@ -251,6 +253,9 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         batch.shader = null
         val width = Gdx.graphics.width
         val height = Gdx.graphics.height
+        if (width <= 0 || height <= 0) {
+            return
+        }
         val density = Gdx.graphics.density
         val activeScreenFbo = screenFbo
         val scaledWidth = activeScreenFbo?.width ?: 0

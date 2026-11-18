@@ -25,7 +25,7 @@ object GdxPlayerManager {
             currentPlayer = DiffusePlayer(object : DiffusePlayer.PlayerCallback {
                 override fun onPlayerReady() {
                     val vm = ViewModelManager.viewModel
-                    vm.engineOnline.value = true
+                    vm.engineOnline.postValue(true)
                     setPlayerTexture(DiffuseUtils.getValueOrDefault(vm.playerTexture, null))
                 }
 
@@ -125,8 +125,9 @@ object GdxPlayerManager {
     }
 
     fun setPlayerTexture(bitmap: Bitmap?) {
-        DiffuseUtils.logDebug("setPlayerTexture album not null = ${bitmap != null}")
-        val scaledBitmap = if (bitmap == null) {
+        val validBitmap = bitmap?.takeIf { !it.isRecycled }
+        DiffuseUtils.logDebug("setPlayerTexture album not null = ${validBitmap != null}")
+        val scaledBitmap = if (validBitmap == null) {
             DiffuseUtils.logDebug("set default album")
             BitmapFactory.decodeResource(
                 DiffuseApplication.appContext().resources,
@@ -135,7 +136,7 @@ object GdxPlayerManager {
         } else {
             DiffuseUtils.logDebug("set scaled album")
             val size = DiffusePlayer.ALBUM_FBO_SIZE
-            Bitmap.createScaledBitmap(bitmap, size, size, false)
+            Bitmap.createScaledBitmap(validBitmap, size, size, false)
         }
         val player = currentPlayer ?: return
         val app = Gdx.app ?: return

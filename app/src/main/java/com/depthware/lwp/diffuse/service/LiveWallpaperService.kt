@@ -35,7 +35,7 @@ class LiveWallpaperService : AndroidLiveWallpaperService(), LifecycleOwner {
                 val online = DiffuseUtils.getValueOrDefault(vm.engineOnline, false)
                 if (colorApi && online) {
                     val bitmap = DiffuseUtils.getValueOrDefault(vm.playerTexture, null)
-                    val colors = bitmap?.let { WallpaperColors.fromBitmap(it) }
+                    val colors = bitmap?.takeIf { !it.isRecycled }?.let { WallpaperColors.fromBitmap(it) }
                     if (colors != null) {
                         DiffuseUtils.logDebug("onComputeColors $colors")
                         return colors
