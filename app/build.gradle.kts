@@ -1,3 +1,4 @@
+import java.util.Properties
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ArchiveOperations
@@ -91,6 +92,43 @@ android {
         buildConfig = true
     }
 
+    val keystorePropsText = providers
+        .fileContents(rootProject.layout.projectDirectory.file("keystore.properties"))
+        .asText
+        .orNull
+    val keystoreProps = Properties().apply {
+        if (!keystorePropsText.isNullOrBlank()) {
+            load(keystorePropsText.reader())
+        }
+    }
+    val releaseStorePath = providers.environmentVariable("KEYSTORE_FILE").orNull
+        ?: keystoreProps.getProperty("storeFile")
+    val releaseStorePass = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
+        ?: keystoreProps.getProperty("storePassword")
+    val releaseKeyAliasVal = providers.environmentVariable("KEY_ALIAS").orNull
+        ?: keystoreProps.getProperty("keyAlias")
+    val releaseKeyPassVal = providers.environmentVariable("KEY_PASSWORD").orNull
+        ?: keystoreProps.getProperty("keyPassword")
+
+    signingConfigs {
+        if (!releaseStorePath.isNullOrBlank() &&
+            !releaseStorePass.isNullOrBlank() &&
+            !releaseKeyAliasVal.isNullOrBlank() &&
+            !releaseKeyPassVal.isNullOrBlank()
+        ) {
+            val candidateFile = rootProject.layout.projectDirectory.file(releaseStorePath).asFile
+                .takeIf { it.exists() } ?: file(releaseStorePath).takeIf { it.exists() }
+            if (candidateFile != null) {
+                create("release") {
+                    storeFile = candidateFile
+                    storePassword = releaseStorePass
+                    keyAlias = releaseKeyAliasVal
+                    keyPassword = releaseKeyPassVal
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -98,6 +136,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

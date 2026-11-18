@@ -32,11 +32,29 @@ Editable Kotlin Android Gradle project reconstructed from the Play Store release
 - **Built-in Palettes**: Add textures under `res/mipmap-nodpi/` and register `MusicPaletteEmbed` items in `MusicPaletteManager.kt`.
 - **Audio Reactivity Bands**: Adjust FFT frequency band boundaries (`BAND_START_HZ` / `BAND_END_HZ`) in `AudioVisualizerManager.kt` and the band weights in `DiffusePlayer.setAudio()`.
 
-## Building
+## Building & CI Workflow
 
-Set `ANDROID_HOME` (or `sdk.dir` in `local.properties`) to an Android SDK installation with **Android SDK Platform 35** (`compileSdk = 35`) and **JDK 17+ / 21**, then open `diffuse-kotlin/` in Android Studio or run:
+Set `ANDROID_HOME` (or `sdk.dir` in `local.properties`) to an Android SDK installation with **Android SDK Platform 35** (`compileSdk = 35`) and **JDK 21**, then open `diffuse-kotlin/` in Android Studio or run:
 
 ```powershell
-$env:JAVA_HOME = "..\tools\jdk21\jdk-21.0.13+9"
-.\gradlew.bat assembleDebug
+.\scripts\build.ps1 assembleDebug
+.\scripts\build.ps1 assembleRelease
+```
+
+### Release Signing
+
+Release builds look for signing credentials in this order:
+1. `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` environment variables (used in CI)
+2. Local `keystore.properties` (ignored by git; see `keystore.properties.example`)
+3. Fallback to the default debug keystore if neither is present
+
+### GitHub Actions Workflows
+
+- `.github/workflows/build.yml` — Runs on `push`, `pull_request`, and manual `workflow_dispatch`: executes `testDebugUnitTest`, `lintDebug`, `assembleDebug`, and `assembleRelease`, and uploads APKs and reports as artifacts.
+- `.github/workflows/release.yml` — Runs on `v*` tags or manual `workflow_dispatch`: signs and publishes a GitHub Release APK.
+
+To enable release signing in GitHub Actions, set these repository secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`), where `KEYSTORE_BASE64` is produced on Windows via:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("app/diffuse-release.jks"))
 ```
