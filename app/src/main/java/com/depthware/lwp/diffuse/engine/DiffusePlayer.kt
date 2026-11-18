@@ -67,6 +67,9 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
     private var noiseScale: Float = 1.0f
     private var postProcessingMode: String = "blur"
     private var brightnessOffset: Float = 0.0f
+    private var saturation: Float = 1.0f
+    private var hdrEnabled: Boolean = false
+    private var hdrIntensity: Float = 1.6f
     private var debugMode: Boolean = false
     private var performanceMode: Boolean = false
 
@@ -353,15 +356,18 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
             batch.begin()
             if (postProcessingMode == "blur" && enableGraphicsOverride) {
                 blurShader.bind()
-                blurShader.setUniformf("u_brightnessOffset", brightnessOffset)
                 blurShader.setUniformi("u_level", 1)
+                applyOutputUniforms(blurShader, isFinalPass = true)
                 batch.shader = blurShader
             } else if (postProcessingMode == "flutedGlass") {
                 glassShader.bind()
                 glassShader.setUniformf("u_numSegments", 16.0f * aspectRatio)
+                applyOutputUniforms(glassShader, isFinalPass = true)
                 batch.shader = glassShader
             } else {
-                batch.shader = null
+                colorShader.bind()
+                applyOutputUniforms(colorShader, isFinalPass = true)
+                batch.shader = colorShader
             }
             batch.draw(renderFbo.colorBufferTexture, 0.0f, 0.0f, widthF, heightF, 0.0f, 0.0f, 1.0f, 1.0f)
             batch.flush()
@@ -455,6 +461,7 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
         batch.begin()
         colorShader.bind()
+        applyOutputUniforms(colorShader, isFinalPass = false)
         batch.shader = colorShader
         batch.draw(texture, 0.0f, 0.0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat(), 0.0f, 0.0f, 1.0f, 1.0f)
         batch.flush()
@@ -462,7 +469,7 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         tempA.end()
 
         blurShader.bind()
-        blurShader.setUniformf("u_brightnessOffset", brightnessOffset)
+        applyOutputUniforms(blurShader, isFinalPass = false)
         blurShader.setUniform2fv("u_resolution", floatArrayOf(ALBUM_FBO_SIZE.toFloat(), ALBUM_FBO_SIZE.toFloat()), 0, 2)
         batch.shader = blurShader
 
@@ -521,8 +528,25 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         }
     }
 
+    private fun applyOutputUniforms(shader: ShaderProgram, isFinalPass: Boolean) {
+        shader.setUniformf("u_brightnessOffset", brightnessOffset)
+        shader.setUniformf("u_saturation", saturation)
+        shader.setUniformi("u_hdrEnabled", if (hdrEnabled) 1 else 0)
+        shader.setUniformf("u_hdrIntensity", hdrIntensity)
+        shader.setUniformi("u_isFinalPass", if (isFinalPass) 1 else 0)
+    }
+
     fun setBrightnessFilter(brightness: Float) {
         brightnessOffset = brightness * 0.05f
+    }
+
+    fun setSaturation(saturation: Float) {
+        this.saturation = saturation.coerceIn(0.0f, 2.0f)
+    }
+
+    fun setHdrConfig(enabled: Boolean, intensity: Float) {
+        this.hdrEnabled = enabled
+        this.hdrIntensity = intensity.coerceIn(0.5f, 3.5f)
     }
 
     fun setDebugMode(enabled: Boolean) {

@@ -6,7 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.hardware.display.DisplayManager
 import android.os.Build
+import android.view.Display
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
@@ -51,6 +53,11 @@ class UniversalViewModel : ViewModel() {
     val noiseSpeedMax = MutableLiveData<Float>()
     val brightnessOffset = MutableLiveData<Float>()
     val brightnessOffsetToApply = MediatorLiveData<Float>()
+    val saturation = MutableLiveData<Float>()
+    val hdrMode = MutableLiveData("auto")
+    val hdrIntensity = MutableLiveData<Float>()
+    val hdrEnabledToApply = MediatorLiveData<Boolean>()
+    val supportsHdrDisplay = MutableLiveData(false)
 
     val enableLiveBeats = MutableLiveData<Boolean>()
     val liveBeatsStrength = MutableLiveData<Float>()
@@ -74,6 +81,7 @@ class UniversalViewModel : ViewModel() {
         setupPlayingAlbumArtDrawable()
         setupPlayerTexture()
         setupBrightnessOffsetToApply()
+        setupHdrEnabledToApply()
         setupEngineOnline()
         setupNeedsSaveAlbumArt()
         refresh()
@@ -133,6 +141,31 @@ class UniversalViewModel : ViewModel() {
         brightnessOffsetToApply.addSource(enableWallpaperColorAPI) { recompute() }
     }
 
+    private fun setupHdrEnabledToApply() {
+        val recompute = {
+            val mode = DiffuseUtils.getValueOrDefault(hdrMode, "auto")
+            val displayHdr = DiffuseUtils.getValueOrDefault(supportsHdrDisplay, false)
+            hdrEnabledToApply.value = when (mode) {
+                "on" -> true
+                "off" -> false
+                else -> displayHdr
+            }
+        }
+        hdrEnabledToApply.addSource(hdrMode) { recompute() }
+        hdrEnabledToApply.addSource(supportsHdrDisplay) { recompute() }
+    }
+
+    private fun isDisplayHdrCapable(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+        return try {
+            val dm = DiffuseApplication.appContext().getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+            val display = dm?.getDisplay(Display.DEFAULT_DISPLAY)
+            display?.isHdr == true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     private fun setupEngineOnline() {
         engineOnline.observeForever { online ->
             if (online) {
@@ -169,6 +202,9 @@ class UniversalViewModel : ViewModel() {
             noiseSpeedMin,
             noiseSpeedMax,
             brightnessOffset,
+            saturation,
+            hdrMode,
+            hdrIntensity,
             recordedAppInstallTimeStamp,
             recordedAppVersionCode,
             appReviewRequested
@@ -185,6 +221,7 @@ class UniversalViewModel : ViewModel() {
         isNotificationGranted.value = DiffuseUtils.isNotificationAccessGranted(DiffuseApplication.appContext())
         isAudioPermGranted.value = DiffuseUtils.hasAudioPermissions(DiffuseApplication.appContext())
         supportsWallpaperColorApi.value = Build.VERSION.SDK_INT >= 27
+        supportsHdrDisplay.value = isDisplayHdrCapable()
         restore()
         restoreAlbumArt()
     }
@@ -209,6 +246,10 @@ class UniversalViewModel : ViewModel() {
         noiseSpeedMin.value = p.getFloat("noiseSpeedMin", 0.05f)
         noiseSpeedMax.value = p.getFloat("noiseSpeedMax", 0.5f)
         brightnessOffset.value = p.getFloat("brightnessOffset", 0.0f)
+        saturation.value = p.getFloat("saturation", 1.0f).coerceIn(0.0f, 2.0f)
+        val storedHdrMode = p.getString("hdrMode", "auto") ?: "auto"
+        hdrMode.value = if (storedHdrMode == "on" || storedHdrMode == "off" || storedHdrMode == "auto") storedHdrMode else "auto"
+        hdrIntensity.value = p.getFloat("hdrIntensity", 1.6f).coerceIn(0.5f, 3.5f)
         recordedAppVersionCode.value = p.getInt("recordedAppVersionCode", 0)
         recordedAppInstallTimeStamp.value = p.getLong("recordedAppInstallTimeStamp", System.currentTimeMillis())
         appReviewRequested.value = p.getBoolean("appReviewRequested", false)
@@ -252,6 +293,9 @@ class UniversalViewModel : ViewModel() {
             putFloat("noiseSpeedMin", DiffuseUtils.getValueOrDefault(noiseSpeedMin, 0.05f))
             putFloat("noiseSpeedMax", DiffuseUtils.getValueOrDefault(noiseSpeedMax, 0.5f))
             putFloat("brightnessOffset", DiffuseUtils.getValueOrDefault(brightnessOffset, 0.0f))
+            putFloat("saturation", DiffuseUtils.getValueOrDefault(saturation, 1.0f))
+            putString("hdrMode", DiffuseUtils.getValueOrDefault(hdrMode, "auto"))
+            putFloat("hdrIntensity", DiffuseUtils.getValueOrDefault(hdrIntensity, 1.6f))
             putInt("recordedAppVersionCode", DiffuseUtils.getValueOrDefault(recordedAppVersionCode, 0))
             putLong("recordedAppInstallTimeStamp", DiffuseUtils.getValueOrDefault(recordedAppInstallTimeStamp, System.currentTimeMillis()))
             putBoolean("appReviewRequested", DiffuseUtils.getValueOrDefault(appReviewRequested, true))
@@ -286,5 +330,19 @@ class UniversalViewModel : ViewModel() {
     fun setPostProcessEffectFromRadioId(id: Int) {
         postProcessingEffectMode.value =
             if (id == R.id.blur_post_process_effect) "blur" else "flutedGlass"
+    }
+
+    fun getHdrRadioId(): Int = when (hdrMode.value) {
+        "on" -> R.id.hdr_mode_on
+        "off" -> R.id.hdr_mode_off
+        else -> R.id.hdr_mode_auto
+    }
+
+    fun setHdrModeFromRadioId(id: Int) {
+        hdrMode.value = when (id) {
+            R.id.hdr_mode_on -> "on"
+            R.id.hdr_mode_off -> "off"
+            else -> "auto"
+        }
     }
 }

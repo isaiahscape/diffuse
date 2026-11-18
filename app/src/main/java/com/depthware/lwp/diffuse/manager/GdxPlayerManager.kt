@@ -27,6 +27,11 @@ object GdxPlayerManager {
                     val vm = ViewModelManager.viewModel
                     vm.engineOnline.postValue(true)
                     setPlayerTexture(DiffuseUtils.getValueOrDefault(vm.playerTexture, null))
+                    setSaturation(DiffuseUtils.getValueOrDefault(vm.saturation, 1.0f))
+                    setHdrConfig(
+                        DiffuseUtils.getValueOrDefault(vm.hdrEnabledToApply, false),
+                        DiffuseUtils.getValueOrDefault(vm.hdrIntensity, 1.6f)
+                    )
                 }
 
                 override fun onFrameRendered() = Unit
@@ -73,6 +78,15 @@ object GdxPlayerManager {
         vm.noiseSpeedMin.observeForever { updateSpeed() }
         vm.noiseSpeedMax.observeForever { updateSpeed() }
         vm.brightnessOffsetToApply.observeForever { setBrightnessFilter(it) }
+        vm.saturation.observeForever { setSaturation(it) }
+        val updateHdr = {
+            setHdrConfig(
+                DiffuseUtils.getValueOrDefault(vm.hdrEnabledToApply, false),
+                DiffuseUtils.getValueOrDefault(vm.hdrIntensity, 1.6f)
+            )
+        }
+        vm.hdrEnabledToApply.observeForever { updateHdr() }
+        vm.hdrIntensity.observeForever { updateHdr() }
     }
 
     fun setAudio(bands: DoubleArray) {
@@ -92,6 +106,18 @@ object GdxPlayerManager {
         val player = currentPlayer ?: return
         val app = Gdx.app ?: return
         app.postRunnable { player.setBrightnessFilter(brightness) }
+    }
+
+    fun setSaturation(saturation: Float) {
+        val player = currentPlayer ?: return
+        val app = Gdx.app ?: return
+        app.postRunnable { player.setSaturation(saturation) }
+    }
+
+    fun setHdrConfig(enabled: Boolean, intensity: Float) {
+        val player = currentPlayer ?: return
+        val app = Gdx.app ?: return
+        app.postRunnable { player.setHdrConfig(enabled, intensity) }
     }
 
     fun setDebugMode(enabled: Boolean) {

@@ -439,6 +439,51 @@ class MainFragment : Fragment() {
             }
         })
 
+        vm.saturation.observe(viewLifecycleOwner) { sat ->
+            if (sat != null) {
+                val snapped = (Math.round(sat * 20f) / 20f).coerceIn(
+                    card.sliderSaturation.valueFrom,
+                    card.sliderSaturation.valueTo
+                )
+                if (card.sliderSaturation.value != snapped) {
+                    card.sliderSaturation.value = snapped
+                }
+            }
+        }
+        card.sliderSaturation.addOnChangeListener(Slider.OnChangeListener { _, value, fromUser ->
+            if (fromUser && vm.saturation.value != value) {
+                vm.saturation.value = value
+            }
+        })
+
+        vm.hdrMode.observe(viewLifecycleOwner) { mode ->
+            val desiredId = vm.getHdrRadioId()
+            if (card.rgHdrMode.checkedRadioButtonId != desiredId) {
+                card.rgHdrMode.check(desiredId)
+            }
+            card.layoutHdrIntensity.visibility = if (mode == "off") View.GONE else View.VISIBLE
+        }
+        card.rgHdrMode.setOnCheckedChangeListener { _, checkedId ->
+            vm.setHdrModeFromRadioId(checkedId)
+        }
+
+        vm.hdrIntensity.observe(viewLifecycleOwner) { intensity ->
+            if (intensity != null) {
+                val snapped = (Math.round(intensity * 20f) / 20f).coerceIn(
+                    card.sliderHdrIntensity.valueFrom,
+                    card.sliderHdrIntensity.valueTo
+                )
+                if (card.sliderHdrIntensity.value != snapped) {
+                    card.sliderHdrIntensity.value = snapped
+                }
+            }
+        }
+        card.sliderHdrIntensity.addOnChangeListener(Slider.OnChangeListener { _, value, fromUser ->
+            if (fromUser && vm.hdrIntensity.value != value) {
+                vm.hdrIntensity.value = value
+            }
+        })
+
         // Performance mode & Debug view
         vm.enablePerformanceMode.observe(viewLifecycleOwner) { enabled ->
             val v = enabled == true

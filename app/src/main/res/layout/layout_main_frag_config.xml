@@ -316,6 +316,109 @@
                     android:valueTo="1"
                     app:labelBehavior="floating" />
             </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/layout_saturation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:text="Saturation"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:textColor="@color/colorOnSurface" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_saturation"
+                    style="@style/Widget.Material3.Slider"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:stepSize="0.05"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:valueFrom="0"
+                    android:valueTo="2"
+                    app:labelBehavior="floating" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="HDR Output"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:textColor="@color/colorOnSurface" />
+
+            <RadioGroup
+                android:id="@+id/rg_hdr_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/hdr_mode_auto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="12dp"
+                    android:text="Auto"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                <RadioButton
+                    android:id="@+id/hdr_mode_on"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="12dp"
+                    android:text="On"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                <RadioButton
+                    android:id="@+id/hdr_mode_off"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Off"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+            </RadioGroup>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/layout_hdr_intensity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:text="HDR Peak"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:textColor="@color/colorOnSurface" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_hdr_intensity"
+                    style="@style/Widget.Material3.Slider"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:stepSize="0.05"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:valueFrom="0.5"
+                    android:valueTo="3.5"
+                    app:labelBehavior="floating" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <include
