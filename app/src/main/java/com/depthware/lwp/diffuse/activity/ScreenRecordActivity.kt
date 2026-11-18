@@ -36,7 +36,7 @@ class ScreenRecordActivity : AppCompatActivity() {
     private var serviceBound = false
     private var recordFinished = false
 
-    private val serviceConnection = object : ServiceConnection {
+    private val serviceConnection: ServiceConnection = object : ServiceConnection {
         override fun onBindingDied(name: ComponentName?) {
             DiffuseUtils.logDebug("onBindingDied")
         }

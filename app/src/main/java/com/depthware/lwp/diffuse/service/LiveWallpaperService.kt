@@ -5,7 +5,7 @@ import android.os.Build
 import android.service.wallpaper.WallpaperService
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveDataReactiveStreams
+import androidx.lifecycle.toPublisher
 import com.badlogic.gdx.backends.android.AndroidLiveWallpaperService
 import com.badlogic.gdx.graphics.Color
 import com.depthware.lwp.diffuse.engine.GdxConfig
@@ -62,7 +62,7 @@ class LiveWallpaperService : AndroidLiveWallpaperService(), LifecycleOwner {
         super.onCreate()
         lifecycleDispatcher.onServicePreSuperOnCreate()
         colorsDisposable = Flowable.fromPublisher(
-            LiveDataReactiveStreams.toPublisher(this, ViewModelManager.viewModel.playerTexture)
+            ViewModelManager.viewModel.playerTexture.toPublisher(this)
         )
             .throttleLast(1L, TimeUnit.SECONDS)
             .subscribe(

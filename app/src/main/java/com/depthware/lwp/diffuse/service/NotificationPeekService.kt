@@ -79,7 +79,7 @@ class NotificationPeekService : NotificationListenerService() {
             .map { sbn -> Optional.ofNullable(sbn.notification.getLargeIcon()) }
             .filter { it.isPresent }
             .distinctUntilChanged { a, b -> a == b }
-            .map { optIcon -> optIcon.map { icon -> icon.loadDrawable(this) } }
+            .map { optIcon -> optIcon.flatMap { icon -> Optional.ofNullable(icon.loadDrawable(this)) } }
             .filter { it.isPresent }
             .distinctUntilChanged()
             .map { optDrawable ->
