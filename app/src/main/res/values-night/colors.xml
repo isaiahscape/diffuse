@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorOnPrimary">@color/material_black</color>
+    <color name="colorOnSecondary">@color/material_black</color>
+    <color name="colorOnSurface">@color/material_white</color>
+    <color name="colorOnSurfaceMoreSemiTransparent">#33ffffff</color>
+    <color name="colorOnSurfaceSemiTransparent">#66ffffff</color>
+    <color name="colorPrimary">@color/material_white</color>
+    <color name="colorPrimaryVariant">@color/material_white</color>
+    <color name="colorSecondary">@color/material_white</color>
+    <color name="colorSecondaryVariant">@color/material_white</color>
+    <color name="colorSurface">@color/material_black</color>
+    <color name="lessSemiTransparent">#bb000000</color>
+    <color name="semiTransparent">#33000000</color>
+    <color name="transparent">#00000000</color>
+</resources>

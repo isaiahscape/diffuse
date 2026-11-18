@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/config_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="6dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    android:animateLayoutChanges="true"
+    app:cardBackgroundColor="@color/transparent"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/colorOnSurface"
+    app:strokeWidth="2dp">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:animateLayoutChanges="true"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/label_configuration"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:textColor="@color/colorOnSurface" />
+
+        <include layout="@layout/layout_line" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txt_config_tooltip_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:fontFamily="@font/product_sans_bold"
+            android:paddingBottom="8dp"
+            android:text="@string/configuration_panel_tooltip_can_tap_desc"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:textColor="@color/colorOnSurface" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_fluid_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/label_fluid_settings"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:tooltipText="@string/tooltip_fluid_settings_desc" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/layout_fluid_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical"
+            android:paddingStart="32dp"
+            android:paddingEnd="0dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:tooltipText="@string/tooltip_fluid_scale_desc">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:text="@string/label_fluid_scale"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:textColor="@color/colorOnSurface" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_fluid_scale"
+                    style="@style/Widget.Material3.Slider"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    app:labelBehavior="floating" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:tooltipText="@string/tooltip_fluid_speed">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:text="@string/label_speed_min_max"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:textColor="@color/colorOnSurface" />
+
+                <com.google.android.material.slider.RangeSlider
+                    android:id="@+id/fluid_speed_slider"
+                    style="@style/Widget.Material3.Slider"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:valueFrom="0"
+                    android:valueTo="1"
+                    app:labelBehavior="floating" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <include
+            android:id="@+id/line_fluid"
+            layout="@layout/layout_line" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_graphics_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/label_graphics_settings"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:tooltipText="@string/tooltip_graphics_settings_desc" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/layout_graphics_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical"
+            android:paddingStart="32dp"
+            android:paddingEnd="0dp">
+
+            <RadioGroup
+                android:id="@+id/rg_post_process"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <RadioButton
+                    android:id="@+id/blur_post_process_effect"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="@string/label_blur"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:tooltipText="Select to apply blur effect to the fluid" />
+
+                <RadioButton
+                    android:id="@+id/fluted_glass_post_process_effect"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="@string/label_fluted_glass"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:tooltipText="Select to apply fluted glass effect to the fluid" />
+            </RadioGroup>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <include
+            android:id="@+id/line_graphics"
+            layout="@layout/layout_line" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_live_beats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/button_live_beats"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:tooltipText="@string/tooltip_live_beats" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/layout_live_beats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="32dp"
+            android:paddingEnd="0dp"
+            android:tooltipText="@string/tooltip_fluid_strength_desc">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="@string/label_strength"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:textColor="@color/colorOnSurface" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_live_beats_strength"
+                style="@style/Widget.Material3.Slider"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:fontFamily="@font/product_sans_bold"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                app:labelBehavior="floating" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <include
+            android:id="@+id/line_live_beats"
+            layout="@layout/layout_line" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_preserve_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/text_album_art_settings"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/layout_preserve_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical"
+            android:paddingStart="32dp"
+            android:paddingEnd="0dp">
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_preserve_after_restart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="@string/button_preserve_album_color_after_restart"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:tooltipText="@string/tooltip_preserve_state_after_reboot" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_preserve_after_pause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="@string/button_preserve_album_color_after_pause"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:tooltipText="@string/tooltip_preserve_state_after_pause" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_select_default_palette"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="@string/button_select_default_color"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:tooltipText="@string/tooltip_preserve_default_album_color_palette" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <include
+            android:id="@+id/line_preserve_state"
+            layout="@layout/layout_line" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_misc_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="Misc Settings"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/layout_misc_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical"
+            android:paddingStart="32dp"
+            android:paddingEnd="0dp">
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_wallpaper_color_api"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="@string/button_adaptive_launcher_color_scheme"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:tooltipText="@string/tooltip_wallpaper_color_api_support" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/layout_brightness"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:text="Brightness"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:textColor="@color/colorOnSurface" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/slider_brightness"
+                    style="@style/Widget.Material3.Slider"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:valueFrom="-1"
+                    android:valueTo="1"
+                    app:labelBehavior="floating" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <include
+            android:id="@+id/line_misc"
+            layout="@layout/layout_line" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_performance_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/text_performance_mode"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:tooltipText="@string/tooltip_enable_performance_mode" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/cb_debug_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/button_debug_view"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:tooltipText="@string/tooltip_debug_view_desc" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</com.google.android.material.card.MaterialCardView>

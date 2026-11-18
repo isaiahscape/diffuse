@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="@string/app_name"
+    android:description="@string/app_wallpaper_description"
+    android:settingsActivity="com.depthware.lwp.diffuse.activity.LiveWallpaperActivity"
+    android:thumbnail="@mipmap/wallpaper_thumbnail"
+    android:author="@string/app_author"
+    android:contextUri="@string/app_wallpaper_context_uri"
+    android:contextDescription="@string/app_wallpaper_context_description"
+    android:showMetadataInPreview="true"
+    android:settingsSliceUri="content://com.depthware.lwp.diffuse.provider/settings"/>

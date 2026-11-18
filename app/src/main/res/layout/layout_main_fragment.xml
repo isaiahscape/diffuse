@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingVertical="12dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/main_frag_scroll_linear_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="true"
+        android:orientation="vertical">
+
+        <include
+            android:id="@+id/card_requirements"
+            layout="@layout/layout_main_frag_requirements" />
+
+        <include
+            android:id="@+id/card_playing"
+            layout="@layout/layout_main_frag_playing" />
+
+        <include
+            android:id="@+id/card_config"
+            layout="@layout/layout_main_frag_config" />
+
+        <include
+            android:id="@+id/card_debug"
+            layout="@layout/layout_main_frag_debug" />
+
+        <include
+            android:id="@+id/card_experimental"
+            layout="@layout/layout_main_frag_experimental" />
+
+        <include
+            android:id="@+id/card_about"
+            layout="@layout/layout_main_frag_about" />
+
+        <include
+            android:id="@+id/card_faq"
+            layout="@layout/layout_main_frag_faq" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.core.widget.NestedScrollView>

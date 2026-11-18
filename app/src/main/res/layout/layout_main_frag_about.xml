@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/about_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="6dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    app:cardBackgroundColor="@color/transparent"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/colorOnSurface"
+    app:strokeWidth="2dp">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/label_about"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:textColor="@color/colorOnSurface" />
+
+        <include layout="@layout/layout_line" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/txt_app_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:paddingBottom="6dp"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            android:textColor="@color/colorOnSurface" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_feedback"
+            style="@style/Widget.Material3.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/button_feedback"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            app:icon="@drawable/ic_feedback_24px" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_other_apps"
+            style="@style/Widget.Material3.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/button_other_apps"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            app:icon="@drawable/ic_devices_other_24px" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_acknowledgement"
+            style="@style/Widget.Material3.Button.Icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/product_sans_bold"
+            android:text="@string/button_acknowledgement"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+            app:icon="@drawable/ic_emoji_people_24px" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</com.google.android.material.card.MaterialCardView>
