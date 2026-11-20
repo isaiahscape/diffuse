@@ -77,8 +77,8 @@ android {
         applicationId = "com.depthware.lwp.diffuse.v2"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3433
-        versionName = "1.1.0.0 (3433)-PUB"
+        versionCode = 3434
+        versionName = "1.3.0.0 (3434)-PUB"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
