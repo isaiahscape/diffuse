@@ -47,6 +47,7 @@ class MainFragmentViewModel : ViewModel() {
         showPlayingSubText.addSource(vm.playingSubText) {
             showPlayingSubText.value = !it.isNullOrEmpty()
         }
+        showPlayingAlbumArt.value = vm.playingAlbumArtDrawable.value != null
         showPlayingAlbumArt.addSource(vm.playingAlbumArtDrawable) {
             showPlayingAlbumArt.value = it != null
         }
