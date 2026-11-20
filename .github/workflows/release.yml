@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Optional release tag (defaults to build-<commit-hash>)'
+        description: 'Optional release tag (defaults to v<versionName> from app/build.gradle.kts)'
         required: false
         default: ''
       prerelease:
@@ -47,15 +47,22 @@ jobs:
       - name: Resolve release metadata
         id: meta
         run: |
-          SHA7="$(git rev-parse --short=7 HEAD)"
+          RAW_VERSION_NAME="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts | head -n1)"
+          if [ -z "$RAW_VERSION_NAME" ]; then
+            echo "::error::Could not extract versionName from app/build.gradle.kts"
+            exit 1
+          fi
+          SAFE_VERSION="$(printf '%s' "$RAW_VERSION_NAME" | sed -E 's/[[:space:]]+/-/g; s/[()]+//g; s/[^A-Za-z0-9._-]+/-/g; s/-+/-/g; s/^-|-$//g')"
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG="${{ github.ref_name }}"
-            VERSION="${{ github.ref_name }}"
             PRERELEASE="false"
           else
             CUSTOM_TAG="${{ inputs.tag }}"
-            TAG="${CUSTOM_TAG:-build-${SHA7}}"
-            VERSION="${SHA7}"
+            case "$SAFE_VERSION" in
+              v*) DEFAULT_TAG="$SAFE_VERSION" ;;
+              *) DEFAULT_TAG="v${SAFE_VERSION}" ;;
+            esac
+            TAG="${CUSTOM_TAG:-$DEFAULT_TAG}"
             if [ "${{ inputs.prerelease }}" = "true" ]; then
               PRERELEASE="true"
             else
@@ -63,7 +70,8 @@ jobs:
             fi
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=${SAFE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version_name=${RAW_VERSION_NAME}" >> "$GITHUB_OUTPUT"
           echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Accept licenses & install Android 35 components
@@ -128,7 +136,7 @@ jobs:
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: "Diffuse ${{ steps.meta.outputs.version }}"
+          name: "Diffuse ${{ steps.meta.outputs.version_name }}"
           prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
           generate_release_notes: true
           files: release-artifacts/*.apk
