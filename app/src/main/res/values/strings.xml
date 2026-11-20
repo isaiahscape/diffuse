@@ -21,6 +21,7 @@
     <string name="button_leave_rating">Leave a star on GitHub</string>
     <string name="button_live_beats">Live Beats</string>
     <string name="button_live_beats_need_permission">Live Beats (Require Volume Permission)</string>
+    <string name="button_open_aosp_picker">Stock / AOSP Picker</string>
     <string name="button_open_music_application">Open Music Application</string>
     <string name="button_other_apps">other apps</string>
     <string name="button_preserve_album_color_after_pause">Preserve after music pause</string>
@@ -137,6 +138,7 @@
     <string name="text_rainbow">Rainbow</string>
     <string name="text_twilight">Twilight</string>
     <string name="toast_enable_diffuse_access_notification">Please enable Diffuse in the notification access settings</string>
+    <string name="toast_live_wallpaper_picker_unavailable">No live wallpaper picker found on this device</string>
     <string name="toast_performance_mode_disabled">Performance Mode disabled, you can always turn it back on</string>
     <string name="toast_performance_mode_enabled">Performance Mode enabled, you should see a boost over FPS</string>
     <string name="toast_translators_you_are_awesome">You are awesome! :-P</string>

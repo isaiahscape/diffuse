@@ -142,8 +142,22 @@ object DiffuseUtils {
     fun isAtLeastApi(api: Int): Boolean = Build.VERSION.SDK_INT >= api
 
     fun isDiffuseWallpaperActive(context: Context): Boolean {
-        val info = WallpaperManager.getInstance(context).wallpaperInfo
-        return info != null && info.packageName == context.packageName
+        return try {
+            val wm = WallpaperManager.getInstance(context)
+            val pkg = context.packageName
+            if (wm.wallpaperInfo?.packageName == pkg) return true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (wm.getWallpaperInfo(WallpaperManager.FLAG_SYSTEM)?.packageName == pkg ||
+                    wm.getWallpaperInfo(WallpaperManager.FLAG_LOCK)?.packageName == pkg
+                ) {
+                    return true
+                }
+            }
+            false
+        } catch (e: Exception) {
+            logError(e, report = false)
+            false
+        }
     }
 
     fun loadBitmap(dir: File, fileName: String): Bitmap? = try {

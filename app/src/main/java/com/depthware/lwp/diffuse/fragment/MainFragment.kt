@@ -2,8 +2,6 @@ package com.depthware.lwp.diffuse.fragment
 
 import android.Manifest
 import android.animation.LayoutTransition
-import android.app.WallpaperManager
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -24,10 +22,10 @@ import com.depthware.lwp.diffuse.application.DiffuseApplication
 import com.depthware.lwp.diffuse.manager.GdxPlayerManager
 import com.depthware.lwp.diffuse.manager.ToastManager
 import com.depthware.lwp.diffuse.manager.ViewModelManager
-import com.depthware.lwp.diffuse.service.LiveWallpaperService
 import com.depthware.lwp.diffuse.service.NotificationPeekService
 import com.depthware.lwp.diffuse.share.AlbumShareTask
 import com.depthware.lwp.diffuse.util.DiffuseUtils
+import com.depthware.lwp.diffuse.util.LiveWallpaperPickerHelper
 import com.depthware.lwp.diffuse.util.WindowInsetsHelper
 import com.depthware.lwp.diffuse.v2.R
 import com.depthware.lwp.diffuse.v2.databinding.LayoutMainFragmentBinding
@@ -149,7 +147,14 @@ class MainFragment : Fragment() {
             card.root.visibility = if (show == true) View.VISIBLE else View.GONE
         }
         fragViewModel.showSetWallpaperButton.observe(viewLifecycleOwner) { show ->
-            card.btnSetWallpaper.visibility = if (show == true) View.VISIBLE else View.GONE
+            val visible = show == true
+            card.btnSetWallpaper.visibility = if (visible) View.VISIBLE else View.GONE
+            card.btnOpenAospPicker.visibility =
+                if (visible && LiveWallpaperPickerHelper.hasStockAospPicker(requireContext())) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                }
         }
         fragViewModel.showSetNotificationButton.observe(viewLifecycleOwner) { show ->
             card.btnAllowNotification.visibility = if (show == true) View.VISIBLE else View.GONE
@@ -161,6 +166,7 @@ class MainFragment : Fragment() {
         vm.isWallpaperActive.observe(viewLifecycleOwner) { active ->
             val ok = active == true
             card.btnSetWallpaper.isEnabled = !ok
+            card.btnOpenAospPicker.isEnabled = !ok
             card.btnSetWallpaper.icon = ContextCompat.getDrawable(
                 requireContext(),
                 if (ok) R.drawable.ic_check_24px else R.drawable.ic_remove_24px
@@ -184,6 +190,13 @@ class MainFragment : Fragment() {
         }
 
         card.btnSetWallpaper.setOnClickListener { openLiveWallpaperPicker(it) }
+        card.btnSetWallpaper.setOnLongClickListener {
+            LiveWallpaperPickerHelper.openStockAospPicker(it.context)
+            true
+        }
+        card.btnOpenAospPicker.setOnClickListener {
+            LiveWallpaperPickerHelper.openStockAospPicker(it.context)
+        }
         card.btnAllowNotification.setOnClickListener { openNotificationListenerSettings(it) }
         card.btnAllowVolume.setOnClickListener { requestAudioPermissions() }
     }
@@ -636,27 +649,7 @@ class MainFragment : Fragment() {
     }
 
     private fun openLiveWallpaperPicker(view: View) {
-        val ctx = view.context
-        val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            putExtra(
-                WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                ComponentName(ctx, LiveWallpaperService::class.java)
-            )
-        }
-        try {
-            ctx.startActivity(intent)
-        } catch (e: Exception) {
-            DiffuseUtils.logError(e)
-            try {
-                val fallback = Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                }
-                ctx.startActivity(fallback)
-            } catch (e2: Exception) {
-                DiffuseUtils.logError(e2)
-            }
-        }
+        LiveWallpaperPickerHelper.openLiveWallpaperPicker(view.context)
     }
 
     private fun openMusicApp() {
