@@ -237,6 +237,19 @@ class MainFragment : Fragment() {
             card.txtPlayingProgress.text = it
         }
 
+        val updateBpmReadout = {
+            val enabled = vm.enableLiveBeats.value == true
+            val bpm = vm.detectedBpm.value ?: 0
+            if (enabled && bpm > 0) {
+                card.txtPlayingBpm.text = "$bpm BPM"
+                card.txtPlayingBpm.visibility = View.VISIBLE
+            } else {
+                card.txtPlayingBpm.visibility = View.GONE
+            }
+        }
+        vm.detectedBpm.observe(viewLifecycleOwner) { updateBpmReadout() }
+        vm.enableLiveBeats.observe(viewLifecycleOwner) { updateBpmReadout() }
+
         card.btnOpenMusicAppEmpty.setOnClickListener { openMusicApp() }
         card.btnOpenMusicAppPlaying.setOnClickListener { openMusicApp() }
         card.btnShareScreenshot.setOnClickListener { openShareStyleDialog(it) }

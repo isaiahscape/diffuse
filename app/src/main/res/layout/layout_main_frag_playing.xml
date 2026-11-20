@@ -121,6 +121,16 @@
                     android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
                     android:textColor="@color/colorOnSurface" />
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/txt_playing_bpm"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                    android:textColor="@color/colorOnSurface"
+                    android:visibility="gone" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_open_music_app_playing"
                     style="@style/Widget.Material3.Button"

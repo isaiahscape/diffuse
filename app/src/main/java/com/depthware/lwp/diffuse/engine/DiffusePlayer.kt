@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.PerformanceCounter
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import java.util.Locale
 import java.util.zip.Deflater
+import kotlin.math.exp
 
 class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationAdapter() {
 
@@ -78,6 +79,9 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
     private var beatLerpAlpha: Float = 0.08f
     private var targetBeat: Float = 0.0f
     private var currentBeat: Float = 0.0f
+    private var detectedBpm: Float = 0.0f
+    private var bpmConfidence: Float = 0.0f
+    private var beatPhase: Float = 0.0f
 
     private var totalTime: Double = 0.0
     private var scaledTime: Double = 0.0
@@ -250,8 +254,21 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         val delta = Gdx.graphics.deltaTime
         totalTime += delta.toDouble()
         scaledTime = (scaledTime + (delta * currentSpeed).toDouble()) % timeWrap
-        currentSpeed = MathUtils.lerp(currentSpeed, targetSpeed, 0.01f)
-        currentBeat = MathUtils.lerp(currentBeat, targetBeat, beatLerpAlpha)
+        var effectiveTargetBeat = targetBeat
+        var speedBonus = 0.0f
+        if (detectedBpm > 20.0f && bpmConfidence > 0.25f && beatStrength > 0.001f) {
+            beatPhase = (beatPhase + delta * (detectedBpm / 60.0f)) % 1.0f
+            val beatPulse = exp((-beatPhase * 4.5f).toDouble()).toFloat()
+            val weight = bpmConfidence * 0.45f
+            effectiveTargetBeat = MathUtils.lerp(
+                targetBeat,
+                maxOf(targetBeat, beatPulse * beatStrength * 1.15f),
+                weight
+            )
+            speedBonus = beatPulse * bpmConfidence * beatStrength * 0.22f
+        }
+        currentSpeed = MathUtils.lerp(currentSpeed, targetSpeed + speedBonus, 0.01f)
+        currentBeat = MathUtils.lerp(currentBeat, effectiveTargetBeat, beatLerpAlpha)
 
         batch.shader = null
         val width = Gdx.graphics.width
@@ -516,8 +533,13 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         beatLerpAlpha = 0.06f * strength + 0.04f
     }
 
-    fun setAudio(bands: DoubleArray) {
+    fun setAudio(bands: DoubleArray, bpm: Float = 0.0f, confidence: Float = 0.0f) {
         audioBands = bands
+        detectedBpm = bpm
+        bpmConfidence = confidence
+        if (bpm <= 0.0f) {
+            beatPhase = 0.0f
+        }
         if (bands.isNotEmpty()) {
             targetBeat = (
                 (bands[0].toFloat() * 1.5f) -

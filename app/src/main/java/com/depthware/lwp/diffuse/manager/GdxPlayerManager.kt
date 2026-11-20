@@ -89,10 +89,10 @@ object GdxPlayerManager {
         vm.hdrIntensity.observeForever { updateHdr() }
     }
 
-    fun setAudio(bands: DoubleArray) {
+    fun setAudio(bands: DoubleArray, bpm: Float = 0.0f, confidence: Float = 0.0f) {
         val player = currentPlayer ?: return
         val app = Gdx.app ?: return
-        app.postRunnable { player.setAudio(bands) }
+        app.postRunnable { player.setAudio(bands, bpm, confidence) }
     }
 
     fun setAudioStrength(strength: Float) {

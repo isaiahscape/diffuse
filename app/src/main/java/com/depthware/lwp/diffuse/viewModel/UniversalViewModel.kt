@@ -61,6 +61,7 @@ class UniversalViewModel : ViewModel() {
 
     val enableLiveBeats = MutableLiveData<Boolean>()
     val liveBeatsStrength = MutableLiveData<Float>()
+    val detectedBpm = MutableLiveData(0)
     val enableDebugMode = MutableLiveData<Boolean>()
     val enablePreserveState = MutableLiveData<Boolean>()
     val preserveStateAfterRestart = MutableLiveData<Boolean>()

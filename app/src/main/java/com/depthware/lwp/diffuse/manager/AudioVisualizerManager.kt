@@ -1,12 +1,15 @@
 package com.depthware.lwp.diffuse.manager
 
 import android.media.audiofx.Visualizer
+import android.os.SystemClock
 import com.depthware.lwp.diffuse.application.DiffuseApplication
+import com.depthware.lwp.diffuse.util.BpmDetector
 import com.depthware.lwp.diffuse.util.DiffuseUtils
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 object AudioVisualizerManager {
 
@@ -17,6 +20,8 @@ object AudioVisualizerManager {
     private var lastBands = DoubleArray(4)
     private lateinit var bands: Array<Band>
     private var visualizer: Visualizer? = null
+    private val bpmDetector = BpmDetector()
+    private var lastReportedBpm = 0
 
     fun init() {
         lastBands = DoubleArray(4)
@@ -33,8 +38,11 @@ object AudioVisualizerManager {
             } else {
                 DiffuseUtils.logDebug("enableLiveBeats -> false")
                 stop()
+                bpmDetector.reset()
+                lastReportedBpm = 0
+                ViewModelManager.viewModel.detectedBpm.postValue(0)
             }
-            GdxPlayerManager.setAudio(lastBands)
+            GdxPlayerManager.setAudio(lastBands, 0.0f, 0.0f)
         }
     }
 
@@ -104,7 +112,17 @@ object AudioVisualizerManager {
             val clampedHigh = max(clampedLow, min(highBin, magnitudes.size - 1))
             result[i] = bandEnergy(magnitudes, clampedLow, clampedHigh).toDouble()
         }
-        GdxPlayerManager.setAudio(result)
+        val bpmResult = bpmDetector.update(result, SystemClock.elapsedRealtimeNanos() / 1_000_000_000.0)
+        GdxPlayerManager.setAudio(result, bpmResult.bpm, bpmResult.confidence)
+        val roundedBpm = if (bpmResult.bpm > 20.0f && bpmResult.confidence >= 0.25f) {
+            bpmResult.bpm.roundToInt()
+        } else {
+            0
+        }
+        if (roundedBpm != lastReportedBpm) {
+            lastReportedBpm = roundedBpm
+            ViewModelManager.viewModel.detectedBpm.postValue(roundedBpm)
+        }
     }
 
     private fun computeMagnitudes(fft: ByteArray): FloatArray {
