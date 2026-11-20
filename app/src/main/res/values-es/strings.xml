@@ -12,7 +12,8 @@
     <string name="button_debug_view">vista debug</string>
     <string name="button_feedback">opiniones</string>
     <string name="button_help_translate">Ayuda a traducir</string>
-    <string name="button_leave_rating">Deja tu valoración</string>
+    <string name="button_join_community">Únete a la comunidad</string>
+    <string name="button_leave_rating">Deja una estrella en GitHub</string>
     <string name="button_live_beats">Live Beats</string>
     <string name="button_live_beats_need_permission">Live Beats (Requiere permiso de audio)</string>
     <string name="button_open_music_application">Abrir app de música</string>
@@ -26,6 +27,7 @@
     <string name="button_share_screenshot">Compartir screenshot</string>
     <string name="button_troubleshoot">Solucionar problemas</string>
     <string name="button_write_email">Escribe un correo electrónico</string>
+    <string name="button_write_issue">Abrir un issue</string>
     <string name="configuration_panel_tooltip_can_tap_desc">Manten presionada una opción para ver lo que hace</string>
     <string name="debug_mode_now_ed">Modo debug %s</string>
     <string name="debug_mode_v_in_s_clicks">Modo Debug %1$s In %2$d Clicks</string>

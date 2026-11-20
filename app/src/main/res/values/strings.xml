@@ -17,7 +17,8 @@
     <string name="button_feedback">feedback</string>
     <string name="button_get_curated_art">Curated Art From Playlist</string>
     <string name="button_help_translate">Help Translate</string>
-    <string name="button_leave_rating">Leave a rating</string>
+    <string name="button_join_community">Join the community</string>
+    <string name="button_leave_rating">Leave a star on GitHub</string>
     <string name="button_live_beats">Live Beats</string>
     <string name="button_live_beats_need_permission">Live Beats (Require Volume Permission)</string>
     <string name="button_open_music_application">Open Music Application</string>
@@ -36,6 +37,7 @@
     <string name="button_upload_custom_palette">Upload Custom Palette</string>
     <string name="button_visit_homepage">Visit Homepage</string>
     <string name="button_write_email">Write an email</string>
+    <string name="button_write_issue">Write an issue</string>
     <string name="configuration_panel_tooltip_can_tap_desc">Long press on each option to see what it does</string>
     <string name="crowdin_url">https://crowdin.com/project/diffuselwp</string>
     <string name="debug_mode_now_ed">Debug Mode %s</string>
@@ -121,7 +123,7 @@
     <string name="save_image_desc">Poster/Wallpaper Generated From Diffuse</string>
     <string name="select_email_client_send_log">Select an email client to send log files</string>
     <string name="send_support_email">Send a support email</string>
-    <string name="support_email">depthware+diffuse@gmail.com</string>
+    <string name="support_email">isaiahscape@duck.com</string>
     <string name="text_album_art_settings">Album Art Settings</string>
     <string name="text_aurora">Aurora</string>
     <string name="text_beach">Beach</string>
@@ -150,8 +152,11 @@
     <string name="tooltip_preserve_state_after_pause">The color of the last played album art is preserved even music is already stopped</string>
     <string name="tooltip_preserve_state_after_reboot">The color of the last played album art is preserved for the next reboot instead of the default color</string>
     <string name="tooltip_wallpaper_color_api_support">Certain launchers support dynamic foreground text colors to better suit the background wallpaper. You screen might flash every time the color is updated.</string>
-    <string name="url_author_homepage">https://fincher.im</string>
+    <string name="url_author_homepage">https://isaiahthings.vercel.app</string>
     <string name="url_author_store">https://play.google.com/store/apps/dev?id=8603749349042994401</string>
+    <string name="url_community_discord">https://discord.gg/Y3mjXM9NvK</string>
+    <string name="url_github_issues">https://github.com/isaiahscape/diffuse/issues</string>
+    <string name="url_github_repo">https://github.com/isaiahscape/diffuse</string>
     <string name="url_playlist">https://diffuse.app/playlist</string>
     <string name="url_troubleshoot">https://diffuse.app/troubleshoot</string>
 </resources>

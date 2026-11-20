@@ -61,33 +61,64 @@
 
                     <include layout="@layout/layout_line_no_margin" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_visit_homepage"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="@font/product_sans_bold"
-                        android:text="@string/button_visit_homepage"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+                    <androidx.core.widget.NestedScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_write_email"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/product_sans_bold"
-                        android:text="@string/button_write_email"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingBottom="12dp">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_leave_rating"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/product_sans_bold"
-                        android:text="@string/button_leave_rating"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_visit_homepage"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:fontFamily="@font/product_sans_bold"
+                                android:text="@string/button_visit_homepage"
+                                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_write_email"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/product_sans_bold"
+                                android:text="@string/button_write_email"
+                                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_leave_rating"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/product_sans_bold"
+                                android:text="@string/button_leave_rating"
+                                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_write_issue"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/product_sans_bold"
+                                android:text="@string/button_write_issue"
+                                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_join_community"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/product_sans_bold"
+                                android:text="@string/button_join_community"
+                                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+                    </androidx.core.widget.NestedScrollView>
                 </androidx.appcompat.widget.LinearLayoutCompat>
             </com.google.android.material.card.MaterialCardView>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>

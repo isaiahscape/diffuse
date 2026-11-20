@@ -45,7 +45,9 @@ class FeedbackActivity : AppCompatActivity() {
         binding.feedbackActivityRoot.setOnClickListener { finish() }
         binding.btnVisitHomepage.setOnClickListener { ExternalNavigator.openAuthorHomepage() }
         binding.btnWriteEmail.setOnClickListener { ExternalNavigator.sendSupportEmail() }
-        binding.btnLeaveRating.setOnClickListener { ExternalNavigator.openPlayStoreListing() }
+        binding.btnLeaveRating.setOnClickListener { ExternalNavigator.openGitHubRepo() }
+        binding.btnWriteIssue.setOnClickListener { ExternalNavigator.openGitHubIssues() }
+        binding.btnJoinCommunity.setOnClickListener { ExternalNavigator.openCommunityDiscord() }
 
         binding.root.requestApplyInsets()
         window.decorView.systemUiVisibility =

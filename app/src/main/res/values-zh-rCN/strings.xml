@@ -13,7 +13,8 @@
     <string name="button_feedback">反馈</string>
     <string name="button_get_curated_art">从播放列表获得精选色盘</string>
     <string name="button_help_translate">帮助翻译</string>
-    <string name="button_leave_rating">给软件评分</string>
+    <string name="button_join_community">加入社区讨论</string>
+    <string name="button_leave_rating">在 GitHub 点亮星标</string>
     <string name="button_live_beats">动态节奏</string>
     <string name="button_live_beats_need_permission">动态节奏（需要音量权限）</string>
     <string name="button_open_music_application">打开音乐软件</string>
@@ -32,6 +33,7 @@
     <string name="button_upload_custom_palette">上传自定义色盘</string>
     <string name="button_visit_homepage">访问主页</string>
     <string name="button_write_email">编写邮件反馈</string>
+    <string name="button_write_issue">提交问题反馈</string>
     <string name="configuration_panel_tooltip_can_tap_desc">长按选项获得相关介绍</string>
     <string name="debug_mode_now_ed">调试模式%s</string>
     <string name="debug_mode_v_in_s_clicks">%2$d 次点击后%1$s调试模式</string>

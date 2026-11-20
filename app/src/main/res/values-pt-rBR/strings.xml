@@ -12,7 +12,8 @@
     <string name="button_debug_view">Depuração</string>
     <string name="button_feedback">comentários</string>
     <string name="button_help_translate">Ajudar a Traduzir</string>
-    <string name="button_leave_rating">Fazer uma avaliação</string>
+    <string name="button_join_community">Entrar na comunidade</string>
+    <string name="button_leave_rating">Deixe uma estrela no GitHub</string>
     <string name="button_live_beats">Live Beats</string>
     <string name="button_live_beats_need_permission">Live Beats (Requer Permissão de Volume)</string>
     <string name="button_open_music_application">Abrir Aplicativo de Música</string>
@@ -26,6 +27,7 @@
     <string name="button_share_screenshot">Compartilhar Captura de Tela</string>
     <string name="button_troubleshoot">solução de problemas</string>
     <string name="button_write_email">Escrever um email</string>
+    <string name="button_write_issue">Abrir uma issue</string>
     <string name="configuration_panel_tooltip_can_tap_desc">Mantenha uma opção pressionada para ver o que ela faz</string>
     <string name="debug_mode_now_ed">Modo de Depuração %s</string>
     <string name="debug_mode_v_in_s_clicks">Modo de depuração %1$s em %2$d toques</string>

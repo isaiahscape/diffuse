@@ -2,38 +2,34 @@ package com.depthware.lwp.diffuse.manager
 
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
 import com.depthware.lwp.diffuse.application.DiffuseApplication
 import com.depthware.lwp.diffuse.util.DiffuseUtils
 import com.depthware.lwp.diffuse.v2.R
 
 object ExternalNavigator {
 
-    fun openAuthorHomepage() {
+    private fun openUrlRes(@StringRes urlResId: Int) {
         val ctx = DiffuseApplication.appContext()
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ctx.getString(R.string.url_author_homepage))).apply {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ctx.getString(urlResId))).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        ctx.startActivity(intent)
+        try {
+            ctx.startActivity(intent)
+        } catch (e: Exception) {
+            DiffuseUtils.logError(e)
+        }
     }
 
-    fun openCuratedPlaylist() {
-        val ctx = DiffuseApplication.appContext()
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ctx.getString(R.string.url_playlist))).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        ctx.startActivity(intent)
-    }
+    fun openAuthorHomepage() = openUrlRes(R.string.url_author_homepage)
 
-    fun openPlayStoreListing() {
-        val ctx = DiffuseApplication.appContext()
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://play.google.com/store/apps/details?id=${ctx.packageName}")
-        ).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        ctx.startActivity(intent)
-    }
+    fun openCuratedPlaylist() = openUrlRes(R.string.url_playlist)
+
+    fun openGitHubRepo() = openUrlRes(R.string.url_github_repo)
+
+    fun openGitHubIssues() = openUrlRes(R.string.url_github_issues)
+
+    fun openCommunityDiscord() = openUrlRes(R.string.url_community_discord)
 
     fun sendSupportEmail() {
         val ctx = DiffuseApplication.appContext()
