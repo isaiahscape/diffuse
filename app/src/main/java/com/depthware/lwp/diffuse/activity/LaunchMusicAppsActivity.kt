@@ -48,7 +48,8 @@ class LaunchMusicAppsActivity : AppCompatActivity() {
         "in.krosbits.musicolet",
         "com.jio.media.jiobeats",
         "com.gaana",
-        "com.cidercollective.cider"
+        "com.cidercollective.cider",
+        "com.mossapps.flick"
     )
 
     private val excludedPackages = setOf("com.sec.android.app.music")

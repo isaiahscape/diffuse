@@ -1,10 +1,14 @@
 package com.depthware.lwp.diffuse.service
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Icon
+import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.Uri
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.depthware.lwp.diffuse.manager.GdxPlayerManager
@@ -76,15 +80,11 @@ class NotificationPeekService : NotificationListenerService() {
             .doOnError { DiffuseUtils.logError(it) }
 
         albumArtObservable = filteredNotificationObservable
-            .map { sbn -> Optional.ofNullable(sbn.notification.getLargeIcon()) }
-            .filter { it.isPresent }
-            .distinctUntilChanged { a, b -> a == b }
-            .map { optIcon -> optIcon.flatMap { icon -> Optional.ofNullable(icon.loadDrawable(this)) } }
-            .filter { it.isPresent }
-            .distinctUntilChanged()
-            .map { optDrawable ->
-                optDrawable.map { drawable: Drawable -> DiffuseUtils.drawableToBitmap(drawable) }
+            .map { sbn -> ArtSource(sbn, sbn.notification?.getLargeIcon(), readMediaMetadata(sbn)) }
+            .distinctUntilChanged { a, b ->
+                a.largeIcon == b.largeIcon && a.metadataKey == b.metadataKey
             }
+            .map { src -> Optional.ofNullable(extractAlbumArtBitmap(src.largeIcon, src.metadata)) }
             .filter { it.isPresent }
             .distinctUntilChanged { a, b ->
                 a.isPresent && b.isPresent && a.get().sameAs(b.get())
@@ -97,8 +97,6 @@ class NotificationPeekService : NotificationListenerService() {
             .distinctUntilChanged { a, b ->
                 a.isPresent && b.isPresent && a.get().sameAs(b.get())
             }
-            .filter { it.isPresent }
-            .distinctUntilChanged()
             .doOnError { DiffuseUtils.logError(it) }
     }
 
@@ -155,13 +153,81 @@ class NotificationPeekService : NotificationListenerService() {
         super.onNotificationRemoved(sbn)
     }
 
+    private data class ArtSource(
+        val sbn: StatusBarNotification,
+        val largeIcon: Icon?,
+        val metadata: MediaMetadata?
+    ) {
+        val metadataKey: String = buildString {
+            append(sbn.packageName)
+            append('|')
+            append(metadata?.getString(MediaMetadata.METADATA_KEY_TITLE).orEmpty())
+            append('|')
+            append(metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST).orEmpty())
+            append('|')
+            append(
+                metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
+                    ?: metadata?.getString(MediaMetadata.METADATA_KEY_ART_URI)
+                    ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
+                    ?: ""
+            )
+            append('|')
+            append(sbn.postTime)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun readMediaMetadata(sbn: StatusBarNotification): MediaMetadata? {
+        val token = sbn.notification?.extras
+            ?.getParcelable<MediaSession.Token>("android.mediaSession") ?: return null
+        return try {
+            MediaController(this, token).metadata
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun extractAlbumArtBitmap(
+        largeIcon: Icon?,
+        metadata: MediaMetadata?
+    ): Bitmap? {
+        val iconBitmap = largeIcon?.loadDrawable(this)?.let { drawable: Drawable ->
+            DiffuseUtils.drawableToBitmap(drawable)
+        }
+        if (iconBitmap != null) return iconBitmap
+
+        val meta = metadata ?: return null
+        return meta.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+            ?: meta.getBitmap(MediaMetadata.METADATA_KEY_ART)
+            ?: meta.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+            ?: loadArtFromUri(meta)
+    }
+
+    private fun loadArtFromUri(metadata: MediaMetadata): Bitmap? {
+        val uriStr = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
+            ?: metadata.getString(MediaMetadata.METADATA_KEY_ART_URI)
+            ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
+            ?: return null
+        val uri = Uri.parse(uriStr)
+        if (uri.scheme != "content" && uri.scheme != "file") return null
+        return try {
+            contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun publishNotificationMetadata(sbn: StatusBarNotification) {
         val vm = ViewModelManager.viewModel
         vm.playingPackageName.postValue(sbn.packageName)
         val extras = sbn.notification.extras
-        val text = extras.getCharSequence("android.text")?.toString().orEmpty()
-        val subText = extras.getCharSequence("android.subText")?.toString().orEmpty()
+        val meta = readMediaMetadata(sbn)
         val title = extras.getCharSequence("android.title")?.toString().orEmpty()
+            .ifBlank { meta?.getString(MediaMetadata.METADATA_KEY_TITLE).orEmpty() }
+        val text = extras.getCharSequence("android.text")?.toString().orEmpty()
+            .ifBlank { meta?.getString(MediaMetadata.METADATA_KEY_ARTIST).orEmpty() }
+        val subText = extras.getCharSequence("android.subText")?.toString().orEmpty()
+            .ifBlank { meta?.getString(MediaMetadata.METADATA_KEY_ALBUM).orEmpty() }
         DiffuseUtils.setLiveDataValue(vm.playingSubText, subText, post = true)
         DiffuseUtils.setLiveDataValue(vm.playingText, text, post = true)
         DiffuseUtils.setLiveDataValue(vm.playingTitle, title, post = true)
