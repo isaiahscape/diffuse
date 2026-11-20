@@ -5,6 +5,9 @@ import android.os.SystemClock
 import com.depthware.lwp.diffuse.application.DiffuseApplication
 import com.depthware.lwp.diffuse.util.BpmDetector
 import com.depthware.lwp.diffuse.util.DiffuseUtils
+import com.depthware.lwp.diffuse.util.OnlineBpmFetcher
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.max
@@ -20,8 +23,18 @@ object AudioVisualizerManager {
     private var lastBands = DoubleArray(4)
     private lateinit var bands: Array<Band>
     private var visualizer: Visualizer? = null
+
     private val bpmDetector = BpmDetector()
-    private var lastReportedBpm = 0
+    private val lookupExecutor = Executors.newSingleThreadExecutor()
+    private val lookupGeneration = AtomicInteger(0)
+
+    @Volatile private var audioBpm = 0.0f
+    @Volatile private var audioBpmConf = 0.0f
+    @Volatile private var onlineBpm = 0.0f
+    @Volatile private var onlineBpmSource = ""
+    @Volatile private var onlineTrackKey = ""
+    @Volatile private var lastReportedBpm = 0
+    @Volatile private var lastReportedLabel = ""
 
     fun init() {
         lastBands = DoubleArray(4)
@@ -31,19 +44,50 @@ object AudioVisualizerManager {
             Band(500.0f, 2000.0f),
             Band(2000.0f, 16000.0f)
         )
-        ViewModelManager.viewModel.enableLiveBeats.observeForever { enabled ->
-            if (enabled) {
-                DiffuseUtils.logDebug("enableLiveBeats -> true")
+        val vm = ViewModelManager.viewModel
+
+        val syncMode = {
+            val enabled = DiffuseUtils.getValueOrDefault(vm.enableLiveBeats, false)
+            val mode = DiffuseUtils.getValueOrDefault(vm.bpmSourceMode, "auto")
+            val useVisualizer = enabled && mode != "online"
+            if (useVisualizer) {
                 start(enableListener = true)
             } else {
-                DiffuseUtils.logDebug("enableLiveBeats -> false")
                 stop()
                 bpmDetector.reset()
-                lastReportedBpm = 0
-                ViewModelManager.viewModel.detectedBpm.postValue(0)
+                audioBpm = 0.0f
+                audioBpmConf = 0.0f
+                lastBands = DoubleArray(4)
             }
-            GdxPlayerManager.setAudio(lastBands, 0.0f, 0.0f)
+
+            if (!enabled || mode == "audio") {
+                clearOnlineBpm()
+            } else {
+                triggerOnlineLookupIfNeeded()
+            }
+            resolveAndPublishAudio()
         }
+
+        vm.enableLiveBeats.observeForever {
+            DiffuseUtils.logDebug("enableLiveBeats -> $it")
+            syncMode()
+        }
+        vm.bpmSourceMode.observeForever {
+            DiffuseUtils.logDebug("bpmSourceMode -> $it")
+            syncMode()
+        }
+
+        val onTrackChanged = {
+            if (DiffuseUtils.getValueOrDefault(vm.enableLiveBeats, false) &&
+                DiffuseUtils.getValueOrDefault(vm.bpmSourceMode, "auto") != "audio"
+            ) {
+                triggerOnlineLookupIfNeeded()
+            }
+        }
+        vm.playingTitle.observeForever { onTrackChanged() }
+        vm.playingText.observeForever { onTrackChanged() }
+        vm.playingPackageName.observeForever { onTrackChanged() }
+        vm.isPlaying.observeForever { onTrackChanged() }
     }
 
     fun getOrCreateVisualizer(): Visualizer? {
@@ -98,6 +142,51 @@ object AudioVisualizerManager {
         DiffuseUtils.logDebug("stop, setEnabled false")
     }
 
+    private fun clearOnlineBpm() {
+        lookupGeneration.incrementAndGet()
+        onlineTrackKey = ""
+        onlineBpm = 0.0f
+        onlineBpmSource = ""
+    }
+
+    private fun triggerOnlineLookupIfNeeded() {
+        val vm = ViewModelManager.viewModel
+        val playing = DiffuseUtils.getValueOrDefault(vm.isPlaying, false)
+        val title = vm.playingTitle.value.orEmpty().trim()
+        val artist = vm.playingText.value.orEmpty().trim()
+        val pkg = vm.playingPackageName.value.orEmpty()
+
+        if (!playing || title.isEmpty()) {
+            clearOnlineBpm()
+            resolveAndPublishAudio()
+            return
+        }
+
+        val key = "$artist|$title|$pkg"
+        if (key == onlineTrackKey && onlineBpm > 20.0f) {
+            resolveAndPublishAudio()
+            return
+        }
+
+        onlineTrackKey = key
+        onlineBpm = 0.0f
+        onlineBpmSource = ""
+        val gen = lookupGeneration.incrementAndGet()
+
+        lookupExecutor.execute {
+            val res = OnlineBpmFetcher.lookup(title, artist, pkg)
+            if (lookupGeneration.get() != gen || onlineTrackKey != key) return@execute
+            if (res != null && res.bpm > 20.0f) {
+                onlineBpm = res.bpm
+                onlineBpmSource = res.source
+            } else {
+                onlineBpm = 0.0f
+                onlineBpmSource = ""
+            }
+            resolveAndPublishAudio()
+        }
+    }
+
     private fun processFft(fft: ByteArray, samplingRate: Int) {
         if (samplingRateMilliHz != samplingRate) {
             samplingRateMilliHz = samplingRate
@@ -112,16 +201,68 @@ object AudioVisualizerManager {
             val clampedHigh = max(clampedLow, min(highBin, magnitudes.size - 1))
             result[i] = bandEnergy(magnitudes, clampedLow, clampedHigh).toDouble()
         }
+        lastBands = result
         val bpmResult = bpmDetector.update(result, SystemClock.elapsedRealtimeNanos() / 1_000_000_000.0)
-        GdxPlayerManager.setAudio(result, bpmResult.bpm, bpmResult.confidence)
-        val roundedBpm = if (bpmResult.bpm > 20.0f && bpmResult.confidence >= 0.25f) {
-            bpmResult.bpm.roundToInt()
+        audioBpm = bpmResult.bpm
+        audioBpmConf = bpmResult.confidence
+        resolveAndPublishAudio()
+    }
+
+    private fun resolveAndPublishAudio() {
+        val vm = ViewModelManager.viewModel
+        val enabled = DiffuseUtils.getValueOrDefault(vm.enableLiveBeats, false)
+        val mode = DiffuseUtils.getValueOrDefault(vm.bpmSourceMode, "auto")
+
+        var bpmToApply = 0.0f
+        var confToApply = 0.0f
+        var label = ""
+
+        if (enabled) {
+            when (mode) {
+                "audio" -> {
+                    bpmToApply = audioBpm
+                    confToApply = audioBpmConf
+                    label = "Audio"
+                }
+                "online" -> {
+                    if (onlineBpm > 20.0f) {
+                        bpmToApply = onlineBpm
+                        confToApply = 0.90f
+                        label = onlineBpmSource
+                    }
+                }
+                else -> {
+                    if (audioBpmConf >= 0.40f && audioBpm > 20.0f) {
+                        bpmToApply = audioBpm
+                        confToApply = audioBpmConf
+                        label = "Audio"
+                    } else if (onlineBpm > 20.0f) {
+                        bpmToApply = onlineBpm
+                        confToApply = 0.85f
+                        label = onlineBpmSource
+                    } else {
+                        bpmToApply = audioBpm
+                        confToApply = audioBpmConf
+                        label = "Audio"
+                    }
+                }
+            }
+        }
+
+        val bandsToSend = if (enabled && mode != "online") lastBands else DoubleArray(4)
+        GdxPlayerManager.setAudio(bandsToSend, bpmToApply, confToApply)
+
+        val roundedBpm = if (bpmToApply > 20.0f && confToApply >= 0.25f) {
+            bpmToApply.roundToInt()
         } else {
             0
         }
-        if (roundedBpm != lastReportedBpm) {
+        val shownLabel = if (roundedBpm > 0) label else ""
+        if (roundedBpm != lastReportedBpm || shownLabel != lastReportedLabel) {
             lastReportedBpm = roundedBpm
-            ViewModelManager.viewModel.detectedBpm.postValue(roundedBpm)
+            lastReportedLabel = shownLabel
+            vm.detectedBpm.postValue(roundedBpm)
+            vm.detectedBpmLabel.postValue(shownLabel)
         }
     }
 

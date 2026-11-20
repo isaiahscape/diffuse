@@ -61,7 +61,9 @@ class UniversalViewModel : ViewModel() {
 
     val enableLiveBeats = MutableLiveData<Boolean>()
     val liveBeatsStrength = MutableLiveData<Float>()
+    val bpmSourceMode = MutableLiveData("auto")
     val detectedBpm = MutableLiveData(0)
+    val detectedBpmLabel = MutableLiveData("")
     val enableDebugMode = MutableLiveData<Boolean>()
     val enablePreserveState = MutableLiveData<Boolean>()
     val preserveStateAfterRestart = MutableLiveData<Boolean>()
@@ -188,6 +190,7 @@ class UniversalViewModel : ViewModel() {
         val fields: List<LiveData<*>> = listOf(
             enableLiveBeats,
             liveBeatsStrength,
+            bpmSourceMode,
             enableDebugMode,
             enableWallpaperColorAPI,
             enableGraphicsOverride,
@@ -232,6 +235,8 @@ class UniversalViewModel : ViewModel() {
         val p = prefs()
         enableLiveBeats.value = p.getBoolean("enableLiveBeats", false)
         liveBeatsStrength.value = p.getFloat("liveBeatsStrength", 0.5f)
+        val storedBpmSource = p.getString("bpmSourceMode", "auto") ?: "auto"
+        bpmSourceMode.value = if (storedBpmSource == "audio" || storedBpmSource == "online" || storedBpmSource == "auto") storedBpmSource else "auto"
         enableDebugMode.value = p.getBoolean("enableDebugMode", false)
         enableGraphicsOverride.value = p.getBoolean("enableGraphicsOverride", true)
         enableFluidOverride.value = p.getBoolean("enableFluidOverride", true)
@@ -279,6 +284,7 @@ class UniversalViewModel : ViewModel() {
         prefs().edit().apply {
             putBoolean("enableLiveBeats", DiffuseUtils.getValueOrDefault(enableLiveBeats, false))
             putFloat("liveBeatsStrength", DiffuseUtils.getValueOrDefault(liveBeatsStrength, 0.5f))
+            putString("bpmSourceMode", DiffuseUtils.getValueOrDefault(bpmSourceMode, "auto"))
             putBoolean("enableDebugMode", DiffuseUtils.getValueOrDefault(enableDebugMode, false))
             putBoolean("enableGraphicsOverride", DiffuseUtils.getValueOrDefault(enableGraphicsOverride, true))
             putBoolean("enableFluidOverride", DiffuseUtils.getValueOrDefault(enableFluidOverride, true))
@@ -343,6 +349,20 @@ class UniversalViewModel : ViewModel() {
         hdrMode.value = when (id) {
             R.id.hdr_mode_on -> "on"
             R.id.hdr_mode_off -> "off"
+            else -> "auto"
+        }
+    }
+
+    fun getBpmSourceRadioId(): Int = when (bpmSourceMode.value) {
+        "audio" -> R.id.bpm_source_audio
+        "online" -> R.id.bpm_source_online
+        else -> R.id.bpm_source_auto
+    }
+
+    fun setBpmSourceFromRadioId(id: Int) {
+        bpmSourceMode.value = when (id) {
+            R.id.bpm_source_audio -> "audio"
+            R.id.bpm_source_online -> "online"
             else -> "auto"
         }
     }

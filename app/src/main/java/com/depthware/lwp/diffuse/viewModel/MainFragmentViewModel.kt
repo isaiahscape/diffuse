@@ -23,7 +23,7 @@ class MainFragmentViewModel : ViewModel() {
 
     init {
         val vm = ViewModelManager.viewModel
-        enableLiveBeatsCheckBox.addSource(vm.isAudioPermGranted) { enableLiveBeatsCheckBox.value = it }
+        enableLiveBeatsCheckBox.value = true
         showAudioPermissionButton.addSource(vm.isAudioPermGranted) { showAudioPermissionButton.value = !it }
         showSetNotificationButton.addSource(vm.isNotificationGranted) { showSetNotificationButton.value = !it }
         showSetWallpaperButton.addSource(vm.isWallpaperActive) { showSetWallpaperButton.value = !it }

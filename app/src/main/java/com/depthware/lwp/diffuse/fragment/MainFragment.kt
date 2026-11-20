@@ -240,14 +240,16 @@ class MainFragment : Fragment() {
         val updateBpmReadout = {
             val enabled = vm.enableLiveBeats.value == true
             val bpm = vm.detectedBpm.value ?: 0
+            val label = vm.detectedBpmLabel.value.orEmpty()
             if (enabled && bpm > 0) {
-                card.txtPlayingBpm.text = "$bpm BPM"
+                card.txtPlayingBpm.text = if (label.isNotEmpty()) "$bpm BPM · $label" else "$bpm BPM"
                 card.txtPlayingBpm.visibility = View.VISIBLE
             } else {
                 card.txtPlayingBpm.visibility = View.GONE
             }
         }
         vm.detectedBpm.observe(viewLifecycleOwner) { updateBpmReadout() }
+        vm.detectedBpmLabel.observe(viewLifecycleOwner) { updateBpmReadout() }
         vm.enableLiveBeats.observe(viewLifecycleOwner) { updateBpmReadout() }
 
         card.btnOpenMusicAppEmpty.setOnClickListener { openMusicApp() }
@@ -340,11 +342,24 @@ class MainFragment : Fragment() {
         fragViewModel.enableLiveBeatsCheckBox.observe(viewLifecycleOwner) { enabled ->
             card.cbLiveBeats.isEnabled = enabled == true
         }
-        vm.isAudioPermGranted.observe(viewLifecycleOwner) { granted ->
+        val updateLiveBeatsTitle = {
+            val granted = vm.isAudioPermGranted.value == true
+            val onlineOnly = vm.bpmSourceMode.value == "online"
             card.cbLiveBeats.text = getString(
-                if (granted == true) R.string.button_live_beats
+                if (granted || onlineOnly) R.string.button_live_beats
                 else R.string.button_live_beats_need_permission
             )
+        }
+        vm.isAudioPermGranted.observe(viewLifecycleOwner) { updateLiveBeatsTitle() }
+        vm.bpmSourceMode.observe(viewLifecycleOwner) {
+            updateLiveBeatsTitle()
+            val desiredId = vm.getBpmSourceRadioId()
+            if (card.rgBpmSource.checkedRadioButtonId != desiredId) {
+                card.rgBpmSource.check(desiredId)
+            }
+        }
+        card.rgBpmSource.setOnCheckedChangeListener { _, checkedId ->
+            vm.setBpmSourceFromRadioId(checkedId)
         }
         vm.enableLiveBeats.observe(viewLifecycleOwner) { enabled ->
             val v = enabled == true
