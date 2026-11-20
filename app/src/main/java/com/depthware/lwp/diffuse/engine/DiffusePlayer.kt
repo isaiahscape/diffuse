@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport
 import java.util.Locale
 import java.util.zip.Deflater
 import kotlin.math.exp
+import kotlin.math.sqrt
 
 class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationAdapter() {
 
@@ -254,21 +255,24 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         val delta = Gdx.graphics.deltaTime
         totalTime += delta.toDouble()
         scaledTime = (scaledTime + (delta * currentSpeed).toDouble()) % timeWrap
-        var effectiveTargetBeat = targetBeat
+        var targetPulseBeat = 0.0f
         var speedBonus = 0.0f
-        if (detectedBpm > 20.0f && bpmConfidence > 0.25f && beatStrength > 0.001f) {
+        if (detectedBpm > 20.0f && bpmConfidence >= 0.25f && beatStrength > 0.001f) {
             beatPhase = (beatPhase + delta * (detectedBpm / 60.0f)) % 1.0f
-            val beatPulse = exp((-beatPhase * 4.5f).toDouble()).toFloat()
-            val weight = bpmConfidence * 0.45f
-            effectiveTargetBeat = MathUtils.lerp(
-                targetBeat,
-                maxOf(targetBeat, beatPulse * beatStrength * 1.15f),
-                weight
-            )
-            speedBonus = beatPulse * bpmConfidence * beatStrength * 0.22f
+            val attackFrac = 0.06f
+            val envelope = if (beatPhase < attackFrac) {
+                beatPhase / attackFrac
+            } else {
+                exp((-(beatPhase - attackFrac) * 5.2f).toDouble()).toFloat()
+            }
+            val pulse = sqrt(maxOf(0.0f, envelope).toDouble()).toFloat()
+            targetPulseBeat = pulse * beatStrength * 1.65f
+            speedBonus = pulse * beatStrength * 0.45f
         }
-        currentSpeed = MathUtils.lerp(currentSpeed, targetSpeed + speedBonus, 0.01f)
-        currentBeat = MathUtils.lerp(currentBeat, effectiveTargetBeat, beatLerpAlpha)
+        val speedAlpha = 1.0f - Math.pow(1.0 - 0.025, (delta * 60.0f).toDouble()).toFloat()
+        val beatAlpha = minOf(1.0f, maxOf(0.18f, 1.0f - Math.pow(1.0 - 0.38, (delta * 60.0f).toDouble()).toFloat()))
+        currentSpeed = MathUtils.lerp(currentSpeed, targetSpeed + speedBonus, speedAlpha)
+        currentBeat = MathUtils.lerp(currentBeat, targetPulseBeat, beatAlpha)
 
         batch.shader = null
         val width = Gdx.graphics.width
@@ -540,14 +544,8 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         if (bpm <= 0.0f) {
             beatPhase = 0.0f
         }
-        if (bands.isNotEmpty()) {
-            targetBeat = (
-                (bands[0].toFloat() * 1.5f) -
-                    (bands[1].toFloat() * 0.1f) -
-                    (bands[2].toFloat() * 0.2f) -
-                    (bands[3].toFloat() * 0.3f)
-                ) * beatStrength
-        }
+        // Live Beats pulses strictly from detected/fetched BPM rather than raw FFT amplitude.
+        targetBeat = 0.0f
     }
 
     private fun applyOutputUniforms(shader: ShaderProgram, isFinalPass: Boolean) {
