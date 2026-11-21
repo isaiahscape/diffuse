@@ -3,9 +3,11 @@ package com.depthware.lwp.diffuse.util
 import com.depthware.lwp.diffuse.ui.lyrics.Lyrics
 import com.depthware.lwp.diffuse.ui.lyrics.LyricsLine
 import com.depthware.lwp.diffuse.ui.lyrics.LyricsWord
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.xml.sax.InputSource
 import java.io.StringReader
+import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.math.roundToLong
 
 object LyricsParser {
@@ -177,13 +179,6 @@ object LyricsParser {
         return textBuilder.toString() to rawWords
     }
 
-    private data class TtmlSpanFrame(
-        val startMs: Long,
-        val endMs: Long,
-        val isBg: Boolean,
-        val textStartOffset: Int
-    )
-
     private data class MutableWordToken(
         val startTimeMs: Long,
         val endTimeMs: Long,
@@ -195,112 +190,105 @@ object LyricsParser {
     fun parseTtml(raw: String): Lyrics {
         val sanitized = raw.replace(Regex("&(?!#?[a-zA-Z0-9]+;)"), "&amp;")
         return try {
-            val factory = XmlPullParserFactory.newInstance().apply {
+            val factory = DocumentBuilderFactory.newInstance().apply {
                 isNamespaceAware = true
             }
-            val parser = factory.newPullParser().apply {
-                setInput(StringReader(sanitized))
-            }
+            val builder = factory.newDocumentBuilder()
+            val document = builder.parse(InputSource(StringReader(sanitized)))
             val out = mutableListOf<LyricsLine>()
-            var inParagraph = false
-            var pBeginMs = 0L
-            var pEndMs = 0L
-            var pAgent: String? = null
-            val pText = StringBuilder()
-            val spanStack = ArrayDeque<TtmlSpanFrame>()
-            val wordTokens = mutableListOf<MutableWordToken>()
+            val paragraphs = document.getElementsByTagNameNS("*", "p")
+                .let { if (it.length > 0) it else document.getElementsByTagName("p") }
+            for (i in 0 until paragraphs.length) {
+                val pNode = paragraphs.item(i) as? Element ?: continue
+                val pBeginMs = parseTtmlTimestamp(pNode.getAttribute("begin").ifEmpty { null })
+                val pEndAttr = pNode.getAttribute("end").ifEmpty { null }
+                val pEndMs = if (pEndAttr != null) parseTtmlTimestamp(pEndAttr) else pBeginMs
+                val pAgent = pNode.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "agent")
+                    .ifEmpty { pNode.getAttribute("ttm:agent") }
+                    .ifEmpty { null }
 
-            var event = parser.eventType
-            while (event != XmlPullParser.END_DOCUMENT) {
-                when (event) {
-                    XmlPullParser.START_TAG -> {
-                        if (parser.name == "p") {
-                            inParagraph = true
-                            pText.setLength(0)
-                            spanStack.clear()
-                            wordTokens.clear()
-                            pBeginMs = parseTtmlTimestamp(parser.getAttributeValue(null, "begin"))
-                            val endAttr = parser.getAttributeValue(null, "end")
-                            pEndMs = if (endAttr != null) parseTtmlTimestamp(endAttr) else pBeginMs
-                            pAgent = parser.getAttributeValue(
-                                "http://www.w3.org/ns/ttml#metadata",
-                                "agent"
-                            )
-                        } else if (inParagraph && parser.name == "span") {
-                            val role = parser.getAttributeValue(
-                                "http://www.w3.org/ns/ttml#metadata",
-                                "role"
-                            )
-                            val isBg = role == "x-bg" || spanStack.any { it.isBg }
-                            val beginAttr = parser.getAttributeValue(null, "begin")
-                            val endAttr = parser.getAttributeValue(null, "end")
-                            val sBegin = if (beginAttr != null) parseTtmlTimestamp(beginAttr) else pBeginMs
-                            val sEnd = if (endAttr != null) parseTtmlTimestamp(endAttr) else sBegin
-                            spanStack.addLast(
-                                TtmlSpanFrame(
-                                    startMs = sBegin,
-                                    endMs = sEnd,
-                                    isBg = isBg,
-                                    textStartOffset = pText.length
-                                )
-                            )
-                        } else if (inParagraph && parser.name == "br") {
-                            pText.append('\n')
-                        }
-                    }
-
-                    XmlPullParser.TEXT -> {
-                        if (inParagraph) {
-                            val chunk = parser.text.orEmpty()
-                            if (chunk.isNotEmpty()) {
-                                val normalized = chunk.replace(Regex("""[\r\n\t]+"""), " ")
-                                if (normalized == " ") {
-                                    if (pText.isNotEmpty() && !pText.last().isWhitespace()) {
-                                        pText.append(' ')
-                                    }
-                                } else {
-                                    pText.append(normalized)
-                                }
-                            }
-                        }
-                    }
-
-                    XmlPullParser.END_TAG -> {
-                        if (parser.name == "span" && inParagraph && spanStack.isNotEmpty()) {
-                            val frame = spanStack.removeLast()
-                            val endOffset = pText.length
-                            val hasNestedWords = wordTokens.any {
-                                it.startOffset >= frame.textStartOffset && it.endOffset <= endOffset
-                            }
-                            if (!hasNestedWords && endOffset > frame.textStartOffset) {
-                                wordTokens.add(
-                                    MutableWordToken(
-                                        startTimeMs = frame.startMs,
-                                        endTimeMs = frame.endMs.coerceAtLeast(frame.startMs),
-                                        startOffset = frame.textStartOffset,
-                                        endOffset = endOffset,
-                                        isBg = frame.isBg
-                                    )
-                                )
-                            }
-                        } else if (parser.name == "p" && inParagraph) {
-                            buildTtmlLinesForParagraph(
-                                pBeginMs = pBeginMs,
-                                pEndMs = pEndMs,
-                                pAgent = pAgent,
-                                rawText = pText.toString(),
-                                tokens = wordTokens,
-                                out = out
-                            )
-                            inParagraph = false
-                        }
-                    }
-                }
-                event = parser.next()
+                val pText = StringBuilder()
+                val wordTokens = mutableListOf<MutableWordToken>()
+                collectTtmlParagraphChildren(
+                    parent = pNode,
+                    pBeginMs = pBeginMs,
+                    parentBg = false,
+                    pText = pText,
+                    wordTokens = wordTokens
+                )
+                buildTtmlLinesForParagraph(
+                    pBeginMs = pBeginMs,
+                    pEndMs = pEndMs,
+                    pAgent = pAgent,
+                    rawText = pText.toString(),
+                    tokens = wordTokens,
+                    out = out
+                )
             }
             if (out.isEmpty()) Lyrics.Empty else Lyrics(out.sortedBy { it.timestamp })
         } catch (_: Exception) {
             Lyrics.Empty
+        }
+    }
+
+    private fun collectTtmlParagraphChildren(
+        parent: Node,
+        pBeginMs: Long,
+        parentBg: Boolean,
+        pText: StringBuilder,
+        wordTokens: MutableList<MutableWordToken>
+    ) {
+        val children = parent.childNodes
+        for (i in 0 until children.length) {
+            val child = children.item(i)
+            when (child.nodeType) {
+                Node.TEXT_NODE, Node.CDATA_SECTION_NODE -> {
+                    val chunk = child.nodeValue.orEmpty()
+                    if (chunk.isNotEmpty()) {
+                        val normalized = chunk.replace(Regex("""[\r\n\t]+"""), " ")
+                        if (normalized == " ") {
+                            if (pText.isNotEmpty() && !pText.last().isWhitespace()) {
+                                pText.append(' ')
+                            }
+                        } else {
+                            pText.append(normalized)
+                        }
+                    }
+                }
+
+                Node.ELEMENT_NODE -> {
+                    val el = child as Element
+                    val localName = el.localName ?: el.nodeName.substringAfter(':')
+                    if (localName == "br") {
+                        pText.append('\n')
+                    } else if (localName == "span") {
+                        val role = el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role")
+                            .ifEmpty { el.getAttribute("ttm:role") }
+                        val isBg = parentBg || role == "x-bg"
+                        val beginAttr = el.getAttribute("begin").ifEmpty { null }
+                        val endAttr = el.getAttribute("end").ifEmpty { null }
+                        val sBegin = if (beginAttr != null) parseTtmlTimestamp(beginAttr) else pBeginMs
+                        val sEnd = if (endAttr != null) parseTtmlTimestamp(endAttr) else sBegin
+                        val startOffset = pText.length
+                        val tokensBefore = wordTokens.size
+                        collectTtmlParagraphChildren(el, sBegin, isBg, pText, wordTokens)
+                        val endOffset = pText.length
+                        if (wordTokens.size == tokensBefore && endOffset > startOffset) {
+                            wordTokens.add(
+                                MutableWordToken(
+                                    startTimeMs = sBegin,
+                                    endTimeMs = sEnd.coerceAtLeast(sBegin),
+                                    startOffset = startOffset,
+                                    endOffset = endOffset,
+                                    isBg = isBg
+                                )
+                            )
+                        }
+                    } else {
+                        collectTtmlParagraphChildren(el, pBeginMs, parentBg, pText, wordTokens)
+                    }
+                }
+            }
         }
     }
 
