@@ -304,24 +304,46 @@ object LyricsParser {
         val bgTokens = tokens.filter { it.isBg }
 
         if (mainTokens.isNotEmpty() && bgTokens.isNotEmpty()) {
-            appendTokenSliceLine(
-                agent = pAgent,
+            val mainSlice = extractTokenSlice(
                 rawText = rawText,
                 tokens = mainTokens,
                 fallbackBegin = pBeginMs,
                 fallbackEnd = pEndMs,
-                stripBgParens = false,
-                out = out
+                stripBgParens = false
             )
-            appendTokenSliceLine(
-                agent = "bg",
+            val bgSlice = extractTokenSlice(
                 rawText = rawText,
                 tokens = bgTokens,
                 fallbackBegin = bgTokens.minOf { it.startTimeMs },
                 fallbackEnd = bgTokens.maxOf { it.endTimeMs },
-                stripBgParens = true,
-                out = out
+                stripBgParens = true
             )
+            if (mainSlice != null) {
+                out.add(
+                    LyricsLine(
+                        timestamp = mainSlice.startMs,
+                        agent = pAgent,
+                        text = mainSlice.text,
+                        background = bgSlice?.text,
+                        endTimestamp = maxOf(mainSlice.endMs, bgSlice?.endMs ?: mainSlice.endMs),
+                        words = mainSlice.words,
+                        backgroundTimestamp = bgSlice?.startMs ?: mainSlice.startMs,
+                        backgroundEndTimestamp = bgSlice?.endMs ?: mainSlice.endMs,
+                        backgroundWords = bgSlice?.words ?: emptyList()
+                    )
+                )
+            } else if (bgSlice != null) {
+                out.add(
+                    LyricsLine(
+                        timestamp = bgSlice.startMs,
+                        agent = "bg",
+                        text = bgSlice.text,
+                        background = null,
+                        endTimestamp = bgSlice.endMs,
+                        words = bgSlice.words
+                    )
+                )
+            }
             return
         }
 
@@ -355,29 +377,48 @@ object LyricsParser {
         }
         if (finalText.isNotEmpty()) {
             val resolvedEnd = finalWords.maxOfOrNull { it.endTimeMs } ?: pEndMs.coerceAtLeast(pBeginMs)
-            out.add(
-                LyricsLine(
-                    timestamp = pBeginMs,
-                    agent = if (isAllBg) "bg" else pAgent,
-                    text = finalText,
-                    background = null,
-                    endTimestamp = resolvedEnd,
-                    words = finalWords
+            val standaloneBg = isAllBg && out.isNotEmpty() && out.last().background == null
+            if (standaloneBg) {
+                val prev = out.removeAt(out.lastIndex)
+                out.add(
+                    prev.copy(
+                        background = finalText,
+                        endTimestamp = maxOf(prev.endTimestamp, resolvedEnd),
+                        backgroundTimestamp = pBeginMs,
+                        backgroundEndTimestamp = resolvedEnd,
+                        backgroundWords = finalWords
+                    )
                 )
-            )
+            } else {
+                out.add(
+                    LyricsLine(
+                        timestamp = pBeginMs,
+                        agent = if (isAllBg) "bg" else pAgent,
+                        text = finalText,
+                        background = null,
+                        endTimestamp = resolvedEnd,
+                        words = finalWords
+                    )
+                )
+            }
         }
     }
 
-    private fun appendTokenSliceLine(
-        agent: String?,
+    private data class TokenSliceResult(
+        val text: String,
+        val startMs: Long,
+        val endMs: Long,
+        val words: List<LyricsWord>
+    )
+
+    private fun extractTokenSlice(
         rawText: String,
         tokens: List<MutableWordToken>,
         fallbackBegin: Long,
         fallbackEnd: Long,
-        stripBgParens: Boolean,
-        out: MutableList<LyricsLine>
-    ) {
-        if (tokens.isEmpty()) return
+        stripBgParens: Boolean
+    ): TokenSliceResult? {
+        if (tokens.isEmpty()) return null
         val sb = StringBuilder()
         val outWords = mutableListOf<LyricsWord>()
         var prevOrigEnd = tokens.first().startOffset
@@ -414,7 +455,7 @@ object LyricsParser {
         }
 
         val finalText = sb.toString().trim()
-        if (finalText.isEmpty()) return
+        if (finalText.isEmpty()) return null
         val leadShift = sb.indexOfFirst { !it.isWhitespace() }.coerceAtLeast(0)
         val adjustedWords = outWords.mapNotNull { w ->
             val s = (w.startOffset - leadShift).coerceIn(0, finalText.length)
@@ -423,16 +464,7 @@ object LyricsParser {
         }
         val startMs = tokens.minOfOrNull { it.startTimeMs } ?: fallbackBegin
         val endMs = tokens.maxOfOrNull { it.endTimeMs } ?: fallbackEnd.coerceAtLeast(startMs)
-        out.add(
-            LyricsLine(
-                timestamp = startMs,
-                agent = agent,
-                text = finalText,
-                background = null,
-                endTimestamp = endMs,
-                words = adjustedWords
-            )
-        )
+        return TokenSliceResult(finalText, startMs, endMs, adjustedWords)
     }
 
     private fun trimWithOffsetShift(raw: String): Pair<String, Int> {

@@ -20,7 +20,10 @@ data class LyricsLine(
     val text: String,
     val background: String?,
     val endTimestamp: Long = timestamp,
-    val words: List<LyricsWord> = emptyList()
+    val words: List<LyricsWord> = emptyList(),
+    val backgroundTimestamp: Long = timestamp,
+    val backgroundEndTimestamp: Long = timestamp,
+    val backgroundWords: List<LyricsWord> = emptyList()
 ) {
     val isMain: Boolean
         get() = agent == null ||

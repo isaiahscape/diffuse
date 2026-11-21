@@ -2,6 +2,7 @@ package com.depthware.lwp.diffuse.fragment
 
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.Choreographer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,7 +25,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 
 class LyricsFragment : Fragment() {
 
@@ -104,9 +107,27 @@ class LyricsFragment : Fragment() {
                         val posMs = estimateCurrentPositionMs() + SYNC_LOOKAHEAD_MS
                         lyricsViewModel?.syncPosition(posMs)
                     }
-                    val interval = if (currentWordTimed && vm.isPlaying.value == true) 16L else 100L
-                    delay(interval)
+                    if (currentWordTimed && vm.isPlaying.value == true) {
+                        awaitNextFrame()
+                    } else {
+                        delay(100L)
+                    }
                 }
+            }
+        }
+    }
+
+    private suspend fun awaitNextFrame() {
+        suspendCancellableCoroutine<Long> { cont ->
+            val choreographer = Choreographer.getInstance()
+            val callback = Choreographer.FrameCallback { frameTimeNanos ->
+                if (cont.isActive) {
+                    cont.resume(frameTimeNanos)
+                }
+            }
+            choreographer.postFrameCallback(callback)
+            cont.invokeOnCancellation {
+                choreographer.removeFrameCallback(callback)
             }
         }
     }

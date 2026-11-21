@@ -48,18 +48,19 @@ class LyricsParserTest {
         """.trimIndent()
 
         val result = LyricsParser.parseTtml(ttml)
-        assertEquals(3, result.lyrics.size)
+        assertEquals(2, result.lyrics.size)
         val first = result.lyrics[0]
         assertEquals(27_395L, first.timestamp)
         assertEquals("I been enough", first.text)
         assertEquals(4, first.words.size)
         assertEquals("e", first.text.substring(first.words[2].startOffset, first.words[2].endOffset))
         assertEquals("nough", first.text.substring(first.words[3].startOffset, first.words[3].endOffset))
-        val bgLine = result.lyrics.first { it.agent == "bg" }
-        assertEquals("Hey now", bgLine.text)
-        assertEquals(2, bgLine.words.size)
-        val mainAfterBg = result.lyrics.first { it.text == "Call" }
-        assertEquals(145_620L, mainAfterBg.timestamp)
+        val second = result.lyrics[1]
+        assertEquals("Hey now", second.background)
+        assertEquals(2, second.backgroundWords.size)
+        assertEquals(144_800L, second.backgroundTimestamp)
+        assertEquals("Call", second.text)
+        assertEquals(145_620L, second.timestamp)
     }
 
     @Test

@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.RenderEffect
 import android.graphics.RenderNode
 import android.graphics.Shader
@@ -28,24 +30,28 @@ class LyricsLineView internal constructor(
 ) : View(context) {
     private val horizontalPadding = 32.accordDp.px
     private val verticalPadding = 14.accordDp.px
-    private val wordLiftPx = 1.5.accordDp.px
+    private val bgGapPx = 6.accordDp.px
 
     lateinit var animations: Animations
         private set
 
     private lateinit var staticLayout: StaticLayout
+    private var bgStaticLayout: StaticLayout? = null
     private val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = (if (line.agent == "bg") 24f else 34f).accordSp.px
+        textSize = (if (line.agent == "bg") 22f else 32f).accordSp.px
         color = Color.WHITE
         typeface = ResourcesCompat.getFont(context, R.font.inter_bold)
     }
-    private val wordPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = (if (line.agent == "bg") 24f else 34f).accordSp.px
+    private val bgPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 21f.accordSp.px
         color = Color.WHITE
         typeface = ResourcesCompat.getFont(context, R.font.inter_bold)
     }
     private val contentPaint = Paint().apply {
         xfermode = AccordAnimationUtils.addXfermode
+    }
+    private val srcAtopPaint = Paint().apply {
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP)
     }
 
     private val blurRenderNode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -73,6 +79,7 @@ class LyricsLineView internal constructor(
             } else {
                 alpha = value
             }
+            invalidate()
         }
 
     var textScale: Float = 1f
@@ -92,6 +99,7 @@ class LyricsLineView internal constructor(
                 if (roundedValue == 0) null
                 else blurs?.get(roundedValue)
             blurRenderNode?.setRenderEffect(renderEffect)
+            invalidate()
         }
 
     init {
@@ -108,7 +116,8 @@ class LyricsLineView internal constructor(
     fun updateWordSync(positionMs: Long, isActiveLine: Boolean) {
         val wasActive = isLineActive
         isLineActive = isActiveLine
-        if (line.words.isEmpty()) {
+        val hasWords = line.words.isNotEmpty() || line.backgroundWords.isNotEmpty()
+        if (!hasWords) {
             if (wasActive != isActiveLine) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     blurRenderNode?.discardDisplayList()
@@ -117,15 +126,15 @@ class LyricsLineView internal constructor(
             }
             return
         }
-        val minT = line.timestamp - 50L
-        val maxT = line.endTimestamp.coerceAtLeast(line.timestamp) + 250L
+        val minT = minOf(line.timestamp, line.backgroundTimestamp) - 50L
+        val maxT = maxOf(line.endTimestamp, line.backgroundEndTimestamp) + 300L
         val shouldRefresh = wasActive != isActiveLine ||
             (isActiveLine && positionMs in minT..maxT) ||
             (currentWordPositionMs in minT..maxT && positionMs !in minT..maxT)
         if (!shouldRefresh && currentWordPositionMs == positionMs) return
         currentWordPositionMs = positionMs
         if (shouldRefresh) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !(isLineActive && blurRadius < 0.5f)) {
                 blurRenderNode?.discardDisplayList()
             }
             invalidate()
@@ -151,12 +160,24 @@ class LyricsLineView internal constructor(
             .obtain(text, 0, text.length, paint, textWidth)
             .build()
 
-        val layoutHeight = staticLayout.height + vP * 2
+        var contentHeight = staticLayout.height
+        val bgText = line.background
+        bgStaticLayout = if (!bgText.isNullOrEmpty()) {
+            StaticLayout.Builder
+                .obtain(bgText, 0, bgText.length, bgPaint, textWidth)
+                .build()
+                .also { contentHeight += bgGapPx.roundToInt() + it.height }
+        } else {
+            null
+        }
+
+        val layoutHeight = contentHeight + vP * 2
         setMeasuredDimension(layoutWidth, layoutHeight)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             blurRenderNode?.apply {
                 setPosition(hP, vP, layoutWidth - hP, layoutHeight - vP)
+                pivotX = 0f
                 pivotY = layoutHeight / 2f
             }
         }
@@ -166,61 +187,115 @@ class LyricsLineView internal constructor(
         if (!::staticLayout.isInitialized) return
         val count = canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), contentPaint)
         val scale = textScale
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (canvas.isHardwareAccelerated && blurRenderNode != null) {
-                with(blurRenderNode) {
-                    if (!hasDisplayList()) {
-                        val recordingCanvas = beginRecording()
-                        drawLineContent(recordingCanvas, 1f)
-                        endRecording()
-                    }
-                    scaleX = scale
-                    scaleY = scale
-                    canvas.drawRenderNode(this)
+        val hasActiveWordAnim =
+            (line.words.isNotEmpty() || line.backgroundWords.isNotEmpty()) &&
+                isLineActive &&
+                blurRadius < 0.5f &&
+                currentWordPositionMs != Long.MIN_VALUE
+
+        if (!hasActiveWordAnim && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            canvas.isHardwareAccelerated && blurRenderNode != null
+        ) {
+            with(blurRenderNode) {
+                if (!hasDisplayList()) {
+                    val recordingCanvas = beginRecording()
+                    drawBlock(recordingCanvas, 1f)
+                    endRecording()
                 }
-            } else {
-                canvas.translate(horizontalPadding, verticalPadding)
-                canvas.scale(scale, scale)
-                drawLineContent(canvas, textAlpha)
+                scaleX = scale
+                scaleY = scale
+                canvas.drawRenderNode(this)
             }
         } else {
+            canvas.save()
             canvas.translate(horizontalPadding, verticalPadding)
-            canvas.scale(scale, scale)
-            drawLineContent(canvas, textAlpha)
+            canvas.scale(scale, scale, 0f, (height - verticalPadding * 2f) / 2f)
+            drawBlock(canvas, textAlpha)
+            canvas.restore()
         }
         canvas.restoreToCount(count)
     }
 
-    private fun drawLineContent(canvas: Canvas, alphaMultiplier: Float) {
-        val layout = staticLayout
-        if (line.words.isEmpty() || !isLineActive || currentWordPositionMs == Long.MIN_VALUE) {
-            paint.shader = null
-            paint.color = Color.WHITE
-            paint.alpha = (alphaMultiplier * 255).roundToInt().coerceIn(0, 255)
+    private fun drawBlock(canvas: Canvas, alphaMultiplier: Float) {
+        drawSweptLayout(
+            canvas = canvas,
+            layout = staticLayout,
+            text = line.text,
+            textPaint = paint,
+            words = line.words,
+            isActive = isLineActive,
+            lineAlphaMultiplier = alphaMultiplier,
+            unsungFraction = UNSUNG_WORD_ALPHA,
+            sungFraction = 1f
+        )
+
+        val bgLayout = bgStaticLayout
+        val bgText = line.background
+        if (bgLayout != null && !bgText.isNullOrEmpty()) {
+            canvas.save()
+            canvas.translate(0f, staticLayout.height + bgGapPx)
+            drawSweptLayout(
+                canvas = canvas,
+                layout = bgLayout,
+                text = bgText,
+                textPaint = bgPaint,
+                words = line.backgroundWords,
+                isActive = isLineActive,
+                lineAlphaMultiplier = alphaMultiplier * BG_LINE_ALPHA_FACTOR,
+                unsungFraction = UNSUNG_WORD_ALPHA,
+                sungFraction = 1f
+            )
+            canvas.restore()
+        }
+    }
+
+    private fun drawSweptLayout(
+        canvas: Canvas,
+        layout: StaticLayout,
+        text: String,
+        textPaint: TextPaint,
+        words: List<LyricsWord>,
+        isActive: Boolean,
+        lineAlphaMultiplier: Float,
+        unsungFraction: Float,
+        sungFraction: Float
+    ) {
+        if (words.isEmpty() || !isActive || currentWordPositionMs == Long.MIN_VALUE) {
+            textPaint.shader = null
+            textPaint.color = Color.WHITE
+            textPaint.alpha = (lineAlphaMultiplier * sungFraction * 255f).roundToInt().coerceIn(0, 255)
             layout.draw(canvas)
             return
         }
 
-        val text = line.text
-        val baseAlphaInt = (alphaMultiplier * UNSUNG_WORD_ALPHA * 255).roundToInt().coerceIn(0, 255)
-        paint.shader = null
-        paint.color = Color.WHITE
-        paint.alpha = baseAlphaInt
+        val layoutW = layout.width.toFloat().coerceAtLeast(1f)
+        val layoutH = layout.height.toFloat().coerceAtLeast(1f)
+        val dimAlpha = (lineAlphaMultiplier * unsungFraction * 255f).roundToInt().coerceIn(0, 255)
+        val fullAlpha = (lineAlphaMultiplier * sungFraction * 255f).roundToInt().coerceIn(0, 255)
+        val dimColor = Color.argb(dimAlpha, 255, 255, 255)
+        val fullColor = Color.argb(fullAlpha, 255, 255, 255)
+
+        val maskLayer = canvas.saveLayer(0f, 0f, layoutW, layoutH, null)
+        textPaint.shader = null
+        textPaint.color = Color.WHITE
+        textPaint.alpha = 255
         layout.draw(canvas)
 
-        val fullAlphaInt = (alphaMultiplier * 255).roundToInt().coerceIn(0, 255)
-        val fullColor = Color.argb(fullAlphaInt, 255, 255, 255)
-        val dimColor = Color.argb(baseAlphaInt, 255, 255, 255)
+        srcAtopPaint.shader = null
+        srcAtopPaint.color = dimColor
+        canvas.drawRect(0f, 0f, layoutW, layoutH, srcAtopPaint)
 
-        for (word in line.words) {
+        val feather = (textPaint.textSize * 0.65f).coerceAtLeast(18f)
+
+        for (word in words) {
             val startIdx = word.startOffset.coerceIn(0, text.length)
             val endIdx = word.endOffset.coerceIn(startIdx, text.length)
             if (endIdx <= startIdx) continue
 
             val duration = (word.endTimeMs - word.startTimeMs).coerceAtLeast(1L).toFloat()
-            val progress = ((currentWordPositionMs - word.startTimeMs).toFloat() / duration)
+            val rawProgress = ((currentWordPositionMs - word.startTimeMs).toFloat() / duration)
                 .coerceIn(0f, 1f)
-            if (progress <= 0f) continue
+            if (rawProgress <= 0f) continue
 
             val firstLayoutLine = layout.getLineForOffset(startIdx)
             val lastLayoutLine = layout.getLineForOffset((endIdx - 1).coerceAtLeast(startIdx))
@@ -234,43 +309,34 @@ class LyricsLineView internal constructor(
                 val h1 = layout.getPrimaryHorizontal(segEnd)
                 val segLeft = minOf(h0, h1)
                 val segRight = maxOf(h0, h1)
+                if (segRight <= segLeft) continue
+
                 val lineTop = layout.getLineTop(layoutLine).toFloat()
                 val lineBottom = layout.getLineBottom(layoutLine).toFloat()
-                val baseline = layout.getLineBaseline(layoutLine).toFloat()
 
-                val lift = -wordLiftPx * progress
-                canvas.save()
-                canvas.clipRect(segLeft - 4f, lineTop - wordLiftPx * 2f, segRight + 4f, lineBottom + 4f)
-
-                if (progress >= 1f || segRight <= segLeft) {
-                    wordPaint.shader = null
-                    wordPaint.color = fullColor
+                if (rawProgress >= 1f) {
+                    srcAtopPaint.shader = null
+                    srcAtopPaint.color = fullColor
                 } else {
                     val widthSpan = segRight - segLeft
-                    val sweep = segLeft + widthSpan * progress
-                    val edge = (widthSpan * 0.18f).coerceAtLeast(4f)
-                    val gStart = (sweep - edge).coerceAtLeast(segLeft)
-                    val gEnd = (sweep + edge).coerceAtMost(segRight)
-                    if (gEnd > gStart) {
-                        wordPaint.alpha = 255
-                        wordPaint.shader = LinearGradient(
-                            gStart,
-                            baseline,
-                            gEnd,
-                            baseline,
-                            fullColor,
-                            dimColor,
-                            Shader.TileMode.CLAMP
-                        )
-                    } else {
-                        wordPaint.shader = null
-                        wordPaint.color = fullColor
-                    }
+                    val gradEnd = segLeft + (widthSpan + feather) * rawProgress
+                    val gradStart = gradEnd - feather
+                    srcAtopPaint.color = Color.WHITE
+                    srcAtopPaint.shader = LinearGradient(
+                        gradStart,
+                        0f,
+                        gradEnd,
+                        0f,
+                        fullColor,
+                        dimColor,
+                        Shader.TileMode.CLAMP
+                    )
                 }
-                canvas.drawText(text, segStart, segEnd, segLeft, baseline + lift, wordPaint)
-                canvas.restore()
+                canvas.drawRect(segLeft, lineTop, segRight, lineBottom, srcAtopPaint)
             }
         }
+        srcAtopPaint.shader = null
+        canvas.restoreToCount(maskLayer)
     }
 
     override fun performClick(): Boolean {
@@ -352,7 +418,7 @@ class LyricsLineView internal constructor(
             } else {
                 ((index - targetIndex) * 20L + 10L).coerceAtMost(190L)
             }
-            val secondaryDelay = delay + 250L
+            val secondaryDelay = if (isActivated) delay else delay + 180L
 
             targetOffset = textOffset
             offsetFractionAnimator.startDelay = delay
@@ -380,9 +446,10 @@ class LyricsLineView internal constructor(
     private companion object {
         const val BLUR_NODE_NAME = "LyricsLineViewBlurNode"
 
-        const val ACTIVE_ALPHA = 0.9f
-        const val INACTIVE_ALPHA = 0.2f
-        const val UNSUNG_WORD_ALPHA = 0.42f
+        const val ACTIVE_ALPHA = 0.94f
+        const val INACTIVE_ALPHA = 0.24f
+        const val UNSUNG_WORD_ALPHA = 0.40f
+        const val BG_LINE_ALPHA_FACTOR = 0.78f
         const val ACTIVE_SCALE = 1f
         const val INACTIVE_SCALE = 0.96f
         val maxBlurRadius = 8.accordDp.px
