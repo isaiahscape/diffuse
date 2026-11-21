@@ -5,5 +5,13 @@
     <fragment
         android:label="MainFragment"
         android:name="com.depthware.lwp.diffuse.fragment.MainFragment"
-        android:id="@+id/mainFragment"/>
+        android:id="@+id/mainFragment">
+        <action
+            android:id="@+id/action_mainFragment_to_lyricsFragment"
+            app:destination="@id/lyricsFragment" />
+    </fragment>
+    <fragment
+        android:label="LyricsFragment"
+        android:name="com.depthware.lwp.diffuse.fragment.LyricsFragment"
+        android:id="@+id/lyricsFragment" />
 </navigation>

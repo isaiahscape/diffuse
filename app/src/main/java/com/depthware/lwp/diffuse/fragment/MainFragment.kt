@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import com.depthware.lwp.diffuse.activity.FeedbackActivity
 import com.depthware.lwp.diffuse.activity.LaunchMusicAppsActivity
 import com.depthware.lwp.diffuse.activity.ScreenRecordActivity
@@ -267,6 +268,9 @@ class MainFragment : Fragment() {
 
         card.btnOpenMusicAppEmpty.setOnClickListener { openMusicApp() }
         card.btnOpenMusicAppPlaying.setOnClickListener { openMusicApp() }
+        card.btnOpenLyrics.setOnClickListener {
+            findNavController().navigate(R.id.action_mainFragment_to_lyricsFragment)
+        }
         card.btnShareScreenshot.setOnClickListener { openShareStyleDialog(it) }
     }
 

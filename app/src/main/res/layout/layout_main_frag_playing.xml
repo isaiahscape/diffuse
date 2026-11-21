@@ -141,6 +141,15 @@
                     android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_lyrics"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/product_sans_bold"
+                    android:text="@string/button_lyrics"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Overline" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_share_screenshot"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"

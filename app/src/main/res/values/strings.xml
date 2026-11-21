@@ -13,6 +13,7 @@
     <string name="button_allow_read_notification">Allow Reading Notification</string>
     <string name="button_allow_read_volume">Allow Reading Volume (Optional)</string>
     <string name="button_cancel">cancel</string>
+    <string name="button_close">Close</string>
     <string name="button_debug_view">Debug View</string>
     <string name="button_feedback">feedback</string>
     <string name="button_get_curated_art">Curated Art From Playlist</string>
@@ -21,6 +22,7 @@
     <string name="button_leave_rating">Leave a star on GitHub</string>
     <string name="button_live_beats">Live Beats</string>
     <string name="button_live_beats_need_permission">Live Beats (Require Volume Permission)</string>
+    <string name="button_lyrics">Lyrics</string>
     <string name="button_open_aosp_picker">Stock / AOSP Picker</string>
     <string name="button_open_music_application">Open Music Application</string>
     <string name="button_other_apps">other apps</string>
@@ -89,6 +91,9 @@
     <string name="label_how_diffuse_work_desc">Diffuse grabs album arts by reading other music app\'s notifications, and thus Diffuse only works with music apps that use stock music notifications, including Apple Music, Spotify, Google Play Music, YouTube Music, SoundCloud, etc. Certain music players, like QQ Music, might require you to manually set the app to use system-style notification to work, as they are using customized (and thus not supported) notification style by default.</string>
     <string name="label_how_diffuse_work_title">How does Diffuse work?</string>
     <string name="label_last_playing">Current Playing</string>
+    <string name="label_lyrics">Lyrics</string>
+    <string name="label_lyrics_empty">No lyrics available for this track</string>
+    <string name="label_lyrics_loading">Loading lyrics…</string>
     <string name="label_libraries">libraries</string>
     <string name="label_libraries_list">- LibGDX from BadLogicGames\n- Kawase Blur from Intel\n- Domain Wrapping from Inigo Quilez</string>
     <string name="label_mic_audio">Mic Audio</string>

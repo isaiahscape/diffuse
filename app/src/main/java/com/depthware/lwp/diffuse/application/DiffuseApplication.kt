@@ -6,6 +6,7 @@ import com.depthware.lwp.diffuse.manager.AudioVisualizerManager
 import com.depthware.lwp.diffuse.manager.GdxPlayerManager
 import com.depthware.lwp.diffuse.manager.NotificationChannelManager
 import com.depthware.lwp.diffuse.manager.NotificationRegulatorManager
+import com.depthware.lwp.diffuse.ui.lyrics.AccordUiUtils
 import com.google.android.material.color.DynamicColors
 import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.Logger
@@ -22,6 +23,7 @@ class DiffuseApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        AccordUiUtils.init(this)
         DynamicColors.applyToActivitiesIfAvailable(this)
         val formatStrategy = PrettyFormatStrategy.newBuilder()
             .tag("Diffuse")

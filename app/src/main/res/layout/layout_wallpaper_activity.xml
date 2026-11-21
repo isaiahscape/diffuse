@@ -15,24 +15,31 @@
         android:paddingTop="16dp"
         android:paddingRight="16dp">
 
-        <com.google.android.material.textview.MaterialTextView
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/header_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/product_sans_bold"
-            android:text="@string/app_name_short"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline3"
-            android:textColor="@color/colorOnSurface" />
+            android:orientation="vertical">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/product_sans_bold"
-            android:paddingBottom="12dp"
-            android:text="@string/label_diffuse_tagline"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
-            android:textColor="@color/colorOnSurface" />
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/product_sans_bold"
+                android:text="@string/app_name_short"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Headline3"
+                android:textColor="@color/colorOnSurface" />
 
-        <include layout="@layout/layout_line_no_margin" />
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/product_sans_bold"
+                android:paddingBottom="12dp"
+                android:text="@string/label_diffuse_tagline"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
+                android:textColor="@color/colorOnSurface" />
+
+            <include layout="@layout/layout_line_no_margin" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/nav_host_fragment"

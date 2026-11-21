@@ -195,6 +195,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.slice.builders)
     implementation(libs.androidx.slice.core)
+    implementation(libs.kotlinx.coroutines.android)
 
     implementation(libs.gdx.core)
     implementation(libs.gdx.backend.android)

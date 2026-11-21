@@ -39,6 +39,9 @@ class UniversalViewModel : ViewModel() {
     val supportsWallpaperColorApi = MutableLiveData<Boolean>()
 
     val playingProgress = MutableLiveData(0L)
+    val playingDurationMs = MutableLiveData(0L)
+    val playingPositionUpdateTimeMs = MutableLiveData(0L)
+    val playingPlaybackSpeed = MutableLiveData(1.0f)
     val isPlaying = MutableLiveData(false)
     val playingText = MutableLiveData("")
     val playingPackageName = MutableLiveData<String>()

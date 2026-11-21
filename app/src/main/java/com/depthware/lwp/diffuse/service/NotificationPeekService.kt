@@ -9,6 +9,7 @@ import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.net.Uri
+import android.os.SystemClock
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.depthware.lwp.diffuse.manager.GdxPlayerManager
@@ -17,6 +18,7 @@ import com.depthware.lwp.diffuse.util.DiffuseUtils
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.PublishSubject
+import java.lang.ref.WeakReference
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +30,23 @@ class NotificationPeekService : NotificationListenerService() {
         // Set to true only to reproduce the original APK's strict `!isClearable && isOngoing` predicate,
         // which rejects dismissible media notifications on Android 13+.
         private const val REQUIRE_NON_CLEARABLE = false
+
+        @Volatile
+        private var activeControllerRef: WeakReference<MediaController>? = null
+
+        fun seekTo(positionMs: Long): Boolean {
+            val controller = activeControllerRef?.get() ?: return false
+            val target = positionMs.coerceAtLeast(0L)
+            return try {
+                controller.transportControls.seekTo(target)
+                val vm = ViewModelManager.viewModel
+                DiffuseUtils.setLiveDataValue(vm.playingPositionUpdateTimeMs, SystemClock.elapsedRealtime(), post = false)
+                DiffuseUtils.setLiveDataValue(vm.playingProgress, target, post = false)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
     }
 
     private val intervalTicker: Observable<Long> = Observable.interval(1000L, TimeUnit.MILLISECONDS)
@@ -181,7 +200,9 @@ class NotificationPeekService : NotificationListenerService() {
         val token = sbn.notification?.extras
             ?.getParcelable<MediaSession.Token>("android.mediaSession") ?: return null
         return try {
-            MediaController(this, token).metadata
+            val controller = MediaController(this, token)
+            activeControllerRef = WeakReference(controller)
+            controller.metadata
         } catch (_: Exception) {
             null
         }
@@ -228,6 +249,8 @@ class NotificationPeekService : NotificationListenerService() {
             .ifBlank { meta?.getString(MediaMetadata.METADATA_KEY_ARTIST).orEmpty() }
         val subText = extras.getCharSequence("android.subText")?.toString().orEmpty()
             .ifBlank { meta?.getString(MediaMetadata.METADATA_KEY_ALBUM).orEmpty() }
+        val duration = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+        DiffuseUtils.setLiveDataValue(vm.playingDurationMs, duration.coerceAtLeast(0L), post = true)
         DiffuseUtils.setLiveDataValue(vm.playingSubText, subText, post = true)
         DiffuseUtils.setLiveDataValue(vm.playingText, text, post = true)
         DiffuseUtils.setLiveDataValue(vm.playingTitle, title, post = true)
@@ -235,10 +258,15 @@ class NotificationPeekService : NotificationListenerService() {
 
     private fun publishPlaybackState(state: PlaybackState) {
         val playing = state.state == PlaybackState.STATE_PLAYING
-        val position = state.position
+        val position = state.position.coerceAtLeast(0L)
+        val updateTime = state.lastPositionUpdateTime.takeIf { it > 0L }
+            ?: SystemClock.elapsedRealtime()
+        val speed = if (state.playbackSpeed > 0f) state.playbackSpeed else 1.0f
         GdxPlayerManager.setPlaybackState(position, playing)
         val vm = ViewModelManager.viewModel
         DiffuseUtils.setLiveDataValue(vm.isPlaying, playing, post = true)
+        DiffuseUtils.setLiveDataValue(vm.playingPositionUpdateTimeMs, updateTime, post = true)
+        DiffuseUtils.setLiveDataValue(vm.playingPlaybackSpeed, speed, post = true)
         DiffuseUtils.setLiveDataValue(vm.playingProgress, position, post = true)
     }
 }
