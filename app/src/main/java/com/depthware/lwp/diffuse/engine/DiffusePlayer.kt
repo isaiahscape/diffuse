@@ -17,8 +17,8 @@ import com.badlogic.gdx.utils.PerformanceCounter
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import java.util.Locale
 import java.util.zip.Deflater
-import kotlin.math.exp
-import kotlin.math.sqrt
+import kotlin.math.cos
+import kotlin.math.pow
 
 class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationAdapter() {
 
@@ -80,6 +80,7 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
     private var beatLerpAlpha: Float = 0.08f
     private var targetBeat: Float = 0.0f
     private var currentBeat: Float = 0.0f
+    private var currentBeatGlow: Float = 0.0f
     private var detectedBpm: Float = 0.0f
     private var bpmConfidence: Float = 0.0f
     private var beatPhase: Float = 0.0f
@@ -256,23 +257,28 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
         totalTime += delta.toDouble()
         scaledTime = (scaledTime + (delta * currentSpeed).toDouble()) % timeWrap
         var targetPulseBeat = 0.0f
+        var targetBeatGlow = 0.0f
         var speedBonus = 0.0f
-        if (detectedBpm > 20.0f && bpmConfidence >= 0.25f && beatStrength > 0.001f) {
+        if (playing && detectedBpm > 20.0f && bpmConfidence >= 0.25f && beatStrength > 0.001f) {
             beatPhase = (beatPhase + delta * (detectedBpm / 60.0f)) % 1.0f
-            val attackFrac = 0.06f
-            val envelope = if (beatPhase < attackFrac) {
-                beatPhase / attackFrac
+            val attackFrac = 0.18f
+            val rawEnvelope = if (beatPhase < attackFrac) {
+                val u = beatPhase / attackFrac
+                u * u * (3.0f - 2.0f * u)
             } else {
-                exp((-(beatPhase - attackFrac) * 5.2f).toDouble()).toFloat()
+                val u = (beatPhase - attackFrac) / (1.0f - attackFrac)
+                val c = 0.5f + 0.5f * cos(Math.PI * u).toFloat()
+                c.toDouble().pow(1.35).toFloat()
             }
-            val pulse = sqrt(maxOf(0.0f, envelope).toDouble()).toFloat()
-            targetPulseBeat = pulse * beatStrength * 1.65f
-            speedBonus = pulse * beatStrength * 0.45f
+            targetPulseBeat = rawEnvelope * beatStrength * 0.34f
+            targetBeatGlow = rawEnvelope * beatStrength * 0.14f
+            speedBonus = rawEnvelope * beatStrength * 0.65f
         }
-        val speedAlpha = 1.0f - Math.pow(1.0 - 0.025, (delta * 60.0f).toDouble()).toFloat()
-        val beatAlpha = minOf(1.0f, maxOf(0.18f, 1.0f - Math.pow(1.0 - 0.38, (delta * 60.0f).toDouble()).toFloat()))
+        val speedAlpha = 1.0f - (1.0 - 0.06).pow((delta * 60.0f).toDouble()).toFloat()
+        val beatAlpha = minOf(1.0f, maxOf(0.14f, 1.0f - (1.0 - 0.24).pow((delta * 60.0f).toDouble()).toFloat()))
         currentSpeed = MathUtils.lerp(currentSpeed, targetSpeed + speedBonus, speedAlpha)
         currentBeat = MathUtils.lerp(currentBeat, targetPulseBeat, beatAlpha)
+        currentBeatGlow = MathUtils.lerp(currentBeatGlow, targetBeatGlow, beatAlpha)
 
         batch.shader = null
         val width = Gdx.graphics.width
@@ -549,7 +555,8 @@ class DiffusePlayer(private val callback: PlayerCallback? = null) : ApplicationA
     }
 
     private fun applyOutputUniforms(shader: ShaderProgram, isFinalPass: Boolean) {
-        shader.setUniformf("u_brightnessOffset", brightnessOffset)
+        val effectiveBrightness = if (isFinalPass) brightnessOffset + currentBeatGlow else brightnessOffset
+        shader.setUniformf("u_brightnessOffset", effectiveBrightness)
         shader.setUniformf("u_saturation", saturation)
         shader.setUniformi("u_hdrEnabled", if (hdrEnabled) 1 else 0)
         shader.setUniformf("u_hdrIntensity", hdrIntensity)

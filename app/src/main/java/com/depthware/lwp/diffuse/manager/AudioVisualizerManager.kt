@@ -232,15 +232,11 @@ object AudioVisualizerManager {
                     }
                 }
                 else -> {
-                    if (audioBpmConf >= 0.40f && audioBpm > 20.0f) {
-                        bpmToApply = audioBpm
-                        confToApply = audioBpmConf
-                        label = "Audio"
-                    } else if (onlineBpm > 20.0f) {
+                    if (onlineBpm > 20.0f) {
                         bpmToApply = onlineBpm
-                        confToApply = 0.85f
+                        confToApply = 0.90f
                         label = onlineBpmSource
-                    } else {
+                    } else if (audioBpmConf >= 0.25f && audioBpm > 20.0f) {
                         bpmToApply = audioBpm
                         confToApply = audioBpmConf
                         label = "Audio"

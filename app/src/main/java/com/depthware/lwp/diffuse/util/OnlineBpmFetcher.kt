@@ -19,6 +19,7 @@ data class OnlineBpmResult(val bpm: Float, val source: String)
  */
 object OnlineBpmFetcher {
 
+    private val middotNoise = Regex("""\s*[·•]\s+.*$""")
     private val parenNoise = Regex("""\s*[\(\[].*?[\)\]]""")
     private val featNoise = Regex("""\s+(feat\.?|ft\.?)\s+.*$""", RegexOption.IGNORE_CASE)
     private val nonWord = Regex("""[^\p{L}\p{N}\s]+""")
@@ -221,7 +222,8 @@ object OnlineBpmFetcher {
     }
 
     private fun cleanTrackText(text: String): String {
-        var s = parenNoise.replace(text, "")
+        var s = middotNoise.replace(text, "")
+        s = parenNoise.replace(s, "")
         s = featNoise.replace(s, "")
         return s.trim()
     }
