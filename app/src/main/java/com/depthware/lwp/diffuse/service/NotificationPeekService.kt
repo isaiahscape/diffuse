@@ -80,11 +80,11 @@ class NotificationPeekService : NotificationListenerService() {
             .map { sbn ->
                 sbn.notification.extras.getParcelable<MediaSession.Token>("android.mediaSession")!!
             }
-            .distinctUntilChanged()
             .map { token -> MediaController(this, token) }
             .filter { controller ->
                 controller.playbackState != null && controller.playbackInfo != null
             }
+            .distinctUntilChanged { a, b -> a.sessionToken == b.sessionToken }
             .doOnError { DiffuseUtils.logError(it) }
 
         playbackStateObservable = Observable.combineLatest(
@@ -92,10 +92,16 @@ class NotificationPeekService : NotificationListenerService() {
             mediaControllerObservable
         ) { _, controller -> controller }
             .flatMap { controller ->
+                activeControllerRef = WeakReference(controller)
                 val state = controller.playbackState
                 if (state != null) Observable.just(state) else Observable.empty()
             }
-            .distinctUntilChanged { a, b -> a == b }
+            .distinctUntilChanged { a, b ->
+                a.state == b.state &&
+                    a.position == b.position &&
+                    a.lastPositionUpdateTime == b.lastPositionUpdateTime &&
+                    a.playbackSpeed == b.playbackSpeed
+            }
             .doOnError { DiffuseUtils.logError(it) }
 
         albumArtObservable = filteredNotificationObservable

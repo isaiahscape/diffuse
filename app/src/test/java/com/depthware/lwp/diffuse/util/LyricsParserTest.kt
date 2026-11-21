@@ -64,6 +64,57 @@ class LyricsParserTest {
     }
 
     @Test
+    fun parsesMusixmatchRichSyncWordToWordAndSubtitles() {
+        val richJson = """
+            [
+              {
+                "ts": 10.6,
+                "te": 13.14,
+                "l": [
+                  {"c": "I", "o": 0},
+                  {"c": " ", "o": 0.559},
+                  {"c": "was", "o": 1.784}
+                ],
+                "x": "I was"
+              },
+              {
+                "ts": 14.0,
+                "te": 16.2,
+                "l": [
+                  {"c": "Obsessed", "o": 0},
+                  {"c": " ", "o": 0.6},
+                  {"c": "(so", "o": 0.8},
+                  {"c": " ", "o": 1.0},
+                  {"c": "obsessed)", "o": 1.2}
+                ],
+                "x": "Obsessed (so obsessed)"
+              }
+            ]
+        """.trimIndent()
+
+        val rich = LyricsParser.parseMusixmatchRichSync(richJson)
+        assertEquals(2, rich.lyrics.size)
+        val first = rich.lyrics[0]
+        assertEquals(10_600L, first.timestamp)
+        assertEquals("I was", first.text)
+        assertEquals(2, first.words.size)
+        assertEquals("I", first.text.substring(first.words[0].startOffset, first.words[0].endOffset))
+        assertEquals(11_159L, first.words[0].endTimeMs)
+        assertEquals("was", first.text.substring(first.words[1].startOffset, first.words[1].endOffset))
+
+        val second = rich.lyrics[1]
+        assertEquals("Obsessed", second.text)
+        assertEquals("So obsessed", second.background)
+        assertEquals(2, second.backgroundWords.size)
+
+        val mxmSubs = """[{"text":"Line A","time":{"total":5.25}},{"text":"","time":{"total":8.0}}]"""
+        val subs = LyricsParser.parseMusixmatchSubtitles(mxmSubs)
+        assertEquals(1, subs.lyrics.size)
+        assertEquals(5_250L, subs.lyrics[0].timestamp)
+        assertEquals("Line A", subs.lyrics[0].text)
+    }
+
+    @Test
     fun parsesPlainLyricsFallback() {
         val raw = "First line\n\nSecond line"
         val result = LyricsParser.parse(raw)

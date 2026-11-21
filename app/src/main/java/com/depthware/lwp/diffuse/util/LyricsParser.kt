@@ -3,6 +3,7 @@ package com.depthware.lwp.diffuse.util
 import com.depthware.lwp.diffuse.ui.lyrics.Lyrics
 import com.depthware.lwp.diffuse.ui.lyrics.LyricsLine
 import com.depthware.lwp.diffuse.ui.lyrics.LyricsWord
+import org.json.JSONArray
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
@@ -472,6 +473,137 @@ object LyricsParser {
         if (leading < 0) return "" to 0
         val trailing = raw.indexOfLast { !it.isWhitespace() } + 1
         return raw.substring(leading, trailing) to leading
+    }
+
+    fun parseMusixmatchRichSync(rawJson: String): Lyrics {
+        if (rawJson.isBlank()) return Lyrics.Empty
+        return try {
+            val arr = JSONArray(rawJson)
+            val out = mutableListOf<LyricsLine>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                val tsMs = (obj.optDouble("ts", 0.0) * 1000.0).roundToLong().coerceAtLeast(0L)
+                val teMs = (obj.optDouble("te", 0.0) * 1000.0).roundToLong().coerceAtLeast(tsMs)
+                val tokensArr = obj.optJSONArray("l")
+                if (tokensArr == null || tokensArr.length() == 0) {
+                    val x = obj.optString("x").trim()
+                    if (x.isNotEmpty()) {
+                        out.add(LyricsLine(tsMs, null, x, null, teMs))
+                    }
+                    continue
+                }
+
+                val sb = StringBuilder()
+                val rawWords = mutableListOf<LyricsWord>()
+                for (j in 0 until tokensArr.length()) {
+                    val tok = tokensArr.optJSONObject(j) ?: continue
+                    val chunk = tok.optString("c")
+                    if (chunk.isEmpty()) continue
+                    val startOffset = sb.length
+                    sb.append(chunk)
+                    val endOffset = sb.length
+                    if (chunk.isBlank()) continue
+
+                    val offsetSec = tok.optDouble("o", 0.0)
+                    val wordStartMs = (tsMs + (offsetSec * 1000.0).roundToLong()).coerceAtLeast(tsMs)
+                    val nextOffsetSec = tokensArr.optJSONObject(j + 1)?.optDouble("o", -1.0) ?: -1.0
+                    val rawWordEndMs = if (nextOffsetSec >= offsetSec) {
+                        tsMs + (nextOffsetSec * 1000.0).roundToLong()
+                    } else {
+                        teMs
+                    }
+                    val wordEndMs = rawWordEndMs.coerceAtLeast(wordStartMs + 80L)
+                    rawWords.add(LyricsWord(wordStartMs, wordEndMs, startOffset, endOffset))
+                }
+
+                val rawText = sb.toString()
+                val trimmed = trimWithOffsetShift(rawText)
+                val lineText = trimmed.first
+                if (lineText.isEmpty()) continue
+                val shift = trimmed.second
+                val words = rawWords.mapNotNull { w ->
+                    val s = (w.startOffset - shift).coerceIn(0, lineText.length)
+                    val e = (w.endOffset - shift).coerceIn(0, lineText.length)
+                    if (e > s) w.copy(startOffset = s, endOffset = e) else null
+                }
+
+                val splitBg = splitTrailingBackground(lineText, words)
+                if (splitBg != null) {
+                    out.add(splitBg.copy(timestamp = tsMs, endTimestamp = maxOf(teMs, splitBg.endTimestamp)))
+                } else {
+                    val lineEnd = words.maxOfOrNull { it.endTimeMs } ?: teMs
+                    out.add(
+                        LyricsLine(
+                            timestamp = tsMs,
+                            agent = null,
+                            text = lineText,
+                            background = null,
+                            endTimestamp = maxOf(teMs, lineEnd),
+                            words = words
+                        )
+                    )
+                }
+            }
+            if (out.isEmpty()) Lyrics.Empty else Lyrics(out.sortedBy { it.timestamp })
+        } catch (_: Exception) {
+            Lyrics.Empty
+        }
+    }
+
+    fun parseMusixmatchSubtitles(rawJson: String): Lyrics {
+        if (rawJson.isBlank()) return Lyrics.Empty
+        return try {
+            val arr = JSONArray(rawJson)
+            val out = mutableListOf<LyricsLine>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                val text = obj.optString("text").trim()
+                if (text.isEmpty()) continue
+                val timeObj = obj.optJSONObject("time") ?: continue
+                val totalSec = timeObj.optDouble("total", -1.0)
+                if (totalSec < 0.0) continue
+                val tsMs = (totalSec * 1000.0).roundToLong()
+                out.add(LyricsLine(tsMs, null, text, null, tsMs))
+            }
+            if (out.isEmpty()) Lyrics.Empty else Lyrics(out.sortedBy { it.timestamp })
+        } catch (_: Exception) {
+            Lyrics.Empty
+        }
+    }
+
+    private fun splitTrailingBackground(lineText: String, words: List<LyricsWord>): LyricsLine? {
+        if (!lineText.endsWith(")")) return null
+        val openIdx = lineText.lastIndexOf('(')
+        if (openIdx <= 1) return null
+        val mainPart = lineText.substring(0, openIdx).trimEnd()
+        val bgRaw = lineText.substring(openIdx + 1, lineText.length - 1).trim()
+        if (mainPart.isEmpty() || bgRaw.isEmpty()) return null
+
+        val mainWords = words.filter { it.endOffset <= mainPart.length }
+        val bgTrimShift = openIdx + 1 + lineText.substring(openIdx + 1, lineText.length - 1)
+            .indexOfFirst { !it.isWhitespace() }.coerceAtLeast(0)
+        val bgWords = words.mapNotNull { w ->
+            if (w.startOffset < openIdx) return@mapNotNull null
+            val s = (w.startOffset - bgTrimShift).coerceIn(0, bgRaw.length)
+            val e = (w.endOffset - bgTrimShift).coerceIn(0, bgRaw.length)
+            if (e > s) w.copy(startOffset = s, endOffset = e) else null
+        }
+        val bgFormatted = bgRaw.replaceFirstChar { ch ->
+            if (ch.isLowerCase()) ch.titlecase() else ch.toString()
+        }
+        val bgStart = bgWords.minOfOrNull { it.startTimeMs } ?: mainWords.lastOrNull()?.endTimeMs ?: 0L
+        val bgEnd = bgWords.maxOfOrNull { it.endTimeMs } ?: bgStart
+        return LyricsLine(
+            timestamp = mainWords.firstOrNull()?.startTimeMs ?: bgStart,
+            agent = null,
+            text = mainPart,
+            background = bgFormatted,
+            endTimestamp = bgEnd,
+            words = mainWords,
+            backgroundTimestamp = bgStart,
+            backgroundEndTimestamp = bgEnd,
+            backgroundWords = bgWords
+        )
     }
 
     private fun parsePlain(raw: String): Lyrics {
